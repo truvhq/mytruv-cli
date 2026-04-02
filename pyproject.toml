@@ -2,6 +2,7 @@
 name = "mytruv"
 version = "0.1.0"
 description = "CLI for accessing your MyTruv financial data"
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     "click>=8.1",
