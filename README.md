@@ -41,8 +41,8 @@ mytruv links
 # 3. Check balances
 mytruv balances
 
-# 4. Pull transactions
-mytruv transactions --from 2025-01-01
+# 4. Pull recent transactions
+mytruv transactions
 
 # 5. Log out
 mytruv auth logout
@@ -67,8 +67,8 @@ mytruv auth logout
 | `mytruv links` | List connected bank accounts and payroll providers |
 | `mytruv balances` | Aggregated balances by account type |
 | `mytruv liabilities` | Aggregated liabilities (credit cards, loans) |
-| `mytruv transactions --from DATE` | Bank transactions (supports `--to`, `--categories`, `--page`) |
-| `mytruv spending` | Spending analysis (supports `--group-by`, `--start-date`, `--end-date`) |
+| `mytruv transactions` | Bank transactions, last 7 days (supports `--from`, `--to`, `--categories`, `--page`) |
+| `mytruv spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`) |
 | `mytruv income` | Income report from payroll and bank sources (supports `--days`) |
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
@@ -77,7 +77,6 @@ mytruv auth logout
 
 | Option | Description |
 |---|---|
-| `--env [production\|development]` | Environment to use (default: production) |
 | `--version` | Show version |
 | `--help` | Show help |
 
@@ -107,7 +106,7 @@ Error format:
 mytruv balances | jq '.aggregated_balances[] | select(.type == "CHECKING")'
 
 # Get transaction count
-mytruv transactions --from 2025-01-01 | jq '.count'
+mytruv transactions | jq '.count'
 
 # Check if authenticated (exit code 0 = yes)
 mytruv auth status | jq -e '.authenticated' > /dev/null 2>&1 && echo "logged in"
@@ -134,25 +133,7 @@ mytruv balances > balances.json
 
 ## How Authentication Works
 
-mytruv uses OAuth 2.0 with PKCE via the MyTruv server:
-
-1. `mytruv auth login` starts a local HTTP server on `127.0.0.1`
-2. Opens your browser to the MyTruv login page
-3. After login, the browser redirects back to the local server
-4. The CLI exchanges the authorization code for access/refresh tokens
-5. Tokens are stored in `~/.config/truv/config.toml` (mode 0600)
-6. Tokens refresh automatically — no need to re-login unless both expire
-
-## Configuration
-
-Credentials are stored at `~/.config/truv/config.toml`. The file is created automatically on first login with restricted permissions (readable only by you).
-
-To use a different environment:
-
-```bash
-mytruv --env development auth login
-mytruv --env development balances
-```
+`mytruv auth login` opens your browser for secure OAuth login. Tokens refresh automatically — no need to re-login unless your session fully expires.
 
 ## Requirements
 
