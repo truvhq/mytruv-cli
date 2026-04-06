@@ -54,12 +54,21 @@ def test_auth_logout_when_not_authenticated(runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_balances", {
-        "total_accounts": 2,
-        "aggregated_balances": [
-            {"type": "CHECKING", "currency_code": "USD", "balance": "1000.00", "available_balance": "900.00", "account_count": 1},
-        ],
-    })
+    mock_cls.return_value = _mock_client(
+        "get_balances",
+        {
+            "total_accounts": 2,
+            "aggregated_balances": [
+                {
+                    "type": "CHECKING",
+                    "currency_code": "USD",
+                    "balance": "1000.00",
+                    "available_balance": "900.00",
+                    "account_count": 1,
+                },
+            ],
+        },
+    )
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 0
@@ -70,12 +79,21 @@ def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_transactions", {
-        "count": 1,
-        "transactions": [
-            {"posted_at": "2025-03-01", "description": "Coffee", "amount": "-5.50", "type": "DEBIT", "status": "POSTED"},
-        ],
-    })
+    mock_cls.return_value = _mock_client(
+        "get_transactions",
+        {
+            "count": 1,
+            "transactions": [
+                {
+                    "posted_at": "2025-03-01",
+                    "description": "Coffee",
+                    "amount": "-5.50",
+                    "type": "DEBIT",
+                    "status": "POSTED",
+                },
+            ],
+        },
+    )
 
     result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--agent"])
     assert result.exit_code == 0
@@ -86,10 +104,27 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_spending", {
-        "spending": {"by_category": [{"category": "Food", "total_amount": "500.00", "transaction_count": 20, "percentage_of_total": "33.3"}]},
-        "summary": {"total_spending": "1500.00", "average_daily_spending": "50.00", "average_monthly_spending": "1500.00", "total_transactions": 60},
-    })
+    mock_cls.return_value = _mock_client(
+        "get_spending",
+        {
+            "spending": {
+                "by_category": [
+                    {
+                        "category": "Food",
+                        "total_amount": "500.00",
+                        "transaction_count": 20,
+                        "percentage_of_total": "33.3",
+                    }
+                ]
+            },
+            "summary": {
+                "total_spending": "1500.00",
+                "average_daily_spending": "50.00",
+                "average_monthly_spending": "1500.00",
+                "total_transactions": 60,
+            },
+        },
+    )
 
     result = runner.invoke(cli, ["spending", "--agent"])
     assert result.exit_code == 0
@@ -99,15 +134,20 @@ def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_income", {
-        "employments": [{
-            "company": {"name": "Acme"},
-            "data_source": "payroll",
-            "income": "85000",
-            "pay_frequency": "annual",
-            "statements": [{"pay_date": "2025-03-15", "gross_pay": "3269.23", "net_pay": "2450.00"}],
-        }],
-    })
+    mock_cls.return_value = _mock_client(
+        "get_income",
+        {
+            "employments": [
+                {
+                    "company": {"name": "Acme"},
+                    "data_source": "payroll",
+                    "income": "85000",
+                    "pay_frequency": "annual",
+                    "statements": [{"pay_date": "2025-03-15", "gross_pay": "3269.23", "net_pay": "2450.00"}],
+                }
+            ],
+        },
+    )
 
     result = runner.invoke(cli, ["income", "--agent"])
     assert result.exit_code == 0
@@ -117,12 +157,24 @@ def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_recurring", {
-        "recurring_transactions": {
-            "outflows": [{"source_name": "Netflix", "average_amount": "15.99", "frequency": "MONTHLY", "status": "active"}],
-            "inflows": [{"source_name": "Acme Corp", "average_amount": "3200.00", "frequency": "BIWEEKLY", "status": "active"}],
+    mock_cls.return_value = _mock_client(
+        "get_recurring",
+        {
+            "recurring_transactions": {
+                "outflows": [
+                    {"source_name": "Netflix", "average_amount": "15.99", "frequency": "MONTHLY", "status": "active"}
+                ],
+                "inflows": [
+                    {
+                        "source_name": "Acme Corp",
+                        "average_amount": "3200.00",
+                        "frequency": "BIWEEKLY",
+                        "status": "active",
+                    }
+                ],
+            },
         },
-    })
+    )
 
     result = runner.invoke(cli, ["recurring", "--agent"])
     assert result.exit_code == 0
@@ -132,12 +184,17 @@ def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_balance_history", {
-        "time_series": [{"date": "2025-03-01", "assets": "50000.00", "liabilities": "10000.00", "net_worth": "40000.00"}],
-        "date_range": "3M",
-        "start_date": "2025-01-01",
-        "end_date": "2025-03-31",
-    })
+    mock_cls.return_value = _mock_client(
+        "get_balance_history",
+        {
+            "time_series": [
+                {"date": "2025-03-01", "assets": "50000.00", "liabilities": "10000.00", "net_worth": "40000.00"}
+            ],
+            "date_range": "3M",
+            "start_date": "2025-01-01",
+            "end_date": "2025-03-31",
+        },
+    )
 
     result = runner.invoke(cli, ["balance-history", "--agent"])
     assert result.exit_code == 0
@@ -150,12 +207,15 @@ def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.user.TruvClient")
 def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_user", {
-        "first_name": "Jane",
-        "last_name": "Doe",
-        "email": "jane@example.com",
-        "phone": "+1234567890",
-    })
+    mock_cls.return_value = _mock_client(
+        "get_user",
+        {
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com",
+            "phone": "+1234567890",
+        },
+    )
 
     result = runner.invoke(cli, ["user", "--agent"])
     assert result.exit_code == 0
@@ -165,12 +225,21 @@ def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @patch("mytruv_cli.commands.links.TruvClient")
 def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_links", {
-        "results": [
-            {"id": "abc123", "provider": {"name": "Chase"}, "provider_id": "chase", "status": "done", "data_source": "financial_accounts"},
-        ],
-        "count": 1,
-    })
+    mock_cls.return_value = _mock_client(
+        "get_links",
+        {
+            "results": [
+                {
+                    "id": "abc123",
+                    "provider": {"name": "Chase"},
+                    "provider_id": "chase",
+                    "status": "done",
+                    "data_source": "financial_accounts",
+                },
+            ],
+            "count": 1,
+        },
+    )
 
     result = runner.invoke(cli, ["links", "--agent"])
     assert result.exit_code == 0

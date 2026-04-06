@@ -1,7 +1,14 @@
 import click
 
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
-from mytruv_cli.output.formatter import agent_option, is_interactive, output_auth_error, output_error, output_json, output_table
+from mytruv_cli.output.formatter import (
+    agent_option,
+    is_interactive,
+    output_auth_error,
+    output_error,
+    output_json,
+    output_table,
+)
 
 
 @click.command("user")

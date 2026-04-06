@@ -1,10 +1,16 @@
-import fcntl
 import os
+import sys
 import tempfile
 from pathlib import Path
 
-import tomli_w
+try:
+    import fcntl
+except ImportError:
+    fcntl = None  # type: ignore[assignment]
+
 import tomllib
+
+import tomli_w
 
 from mytruv_cli.config.constants import DEFAULT_SERVER_URL
 
@@ -20,7 +26,8 @@ def config_path() -> Path:
 def _ensure_dir() -> None:
     d = config_dir()
     d.mkdir(parents=True, exist_ok=True)
-    os.chmod(d, 0o700)
+    if sys.platform != "win32":
+        os.chmod(d, 0o700)
 
 
 def load_config() -> dict:
@@ -37,9 +44,11 @@ def save_config(cfg: dict) -> None:
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
+            if fcntl is not None:
+                fcntl.flock(f, fcntl.LOCK_EX)
             tomli_w.dump(cfg, f)
-        os.chmod(tmp, 0o600)
+        if sys.platform != "win32":
+            os.chmod(tmp, 0o600)
         os.replace(tmp, path)
     except BaseException:
         os.unlink(tmp)
