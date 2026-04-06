@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import hashlib
 import http.server
 import secrets
@@ -135,10 +136,8 @@ def register_client(server_url: str, redirect_uri: str) -> tuple[str, str]:
 
     if resp.status_code != 201:
         detail = resp.text
-        try:
+        with contextlib.suppress(Exception):
             detail = resp.json().get("error_description", resp.text)
-        except Exception:
-            pass
         raise OAuthError("registration_failed", f"Client registration failed: {detail}")
 
     data = resp.json()
@@ -184,7 +183,9 @@ def login(server_url: str, *, no_browser: bool = False) -> dict:
 
     if not _CallbackHandler.received.wait(timeout=_CALLBACK_TIMEOUT):
         server.server_close()
-        raise OAuthError("timeout", f"Authentication timed out after {_CALLBACK_TIMEOUT}s. Run 'mytruv auth login' to try again.")
+        raise OAuthError(
+            "timeout", f"Authentication timed out after {_CALLBACK_TIMEOUT}s. Run 'mytruv auth login' to try again."
+        )
 
     server.server_close()
 
@@ -215,10 +216,8 @@ def login(server_url: str, *, no_browser: bool = False) -> dict:
 
     if resp.status_code != 200:
         detail = resp.text
-        try:
+        with contextlib.suppress(Exception):
             detail = resp.json().get("error_description", resp.text)
-        except Exception:
-            pass
         raise OAuthError("token_exchange_failed", f"Token exchange failed: {detail}")
 
     token_data = resp.json()

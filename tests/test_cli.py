@@ -35,8 +35,16 @@ def test_unknown_command_no_match(runner: CliRunner) -> None:
 
 def test_all_commands_registered() -> None:
     expected = {
-        "auth", "user", "links", "balances", "liabilities",
-        "transactions", "spending", "income", "recurring", "balance-history",
+        "auth",
+        "user",
+        "links",
+        "balances",
+        "liabilities",
+        "transactions",
+        "spending",
+        "income",
+        "recurring",
+        "balance-history",
     }
     assert expected == set(cli.commands.keys())
 

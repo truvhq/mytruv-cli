@@ -2,5 +2,14 @@ __pycache__/
 *.pyc
 .venv/
 dist/
+build/
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
+.env
+.env.*
+*.pem
+*.key
+credentials.*
+secrets.*
+CLAUDE.local.md

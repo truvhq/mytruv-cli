@@ -3,7 +3,15 @@ from collections.abc import Callable
 import click
 
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
-from mytruv_cli.output.formatter import agent_option, is_interactive, output_auth_error, output_error, output_info, output_json, output_table
+from mytruv_cli.output.formatter import (
+    agent_option,
+    is_interactive,
+    output_auth_error,
+    output_error,
+    output_info,
+    output_json,
+    output_table,
+)
 
 
 def _fmt_dollar(val: str | None) -> str:
@@ -117,21 +125,28 @@ def liabilities_cmd() -> None:
 
 @click.command("transactions")
 @click.option(
-    "--from", "from_date", default=None,
+    "--from",
+    "from_date",
+    default=None,
     help="Start date (YYYY-MM-DD). Defaults to 7 days ago.",
 )
 @click.option(
-    "--to", "to_date", default=None,
+    "--to",
+    "to_date",
+    default=None,
     help="End date (YYYY-MM-DD). Defaults to today.",
 )
 @click.option(
-    "--categories", default=None,
+    "--categories",
+    default=None,
     help="Comma-separated category filter. Example: 'Income,Transfer'",
 )
 @click.option("--page", type=int, default=None, help="Page number (1-based). Omit to fetch all.")
 @click.option("--page-size", type=int, default=500, help="Results per page (10-500). Default: 500.")
 @agent_option
-def transactions_cmd(from_date: str | None, to_date: str | None, categories: str | None, page: int | None, page_size: int) -> None:
+def transactions_cmd(
+    from_date: str | None, to_date: str | None, categories: str | None, page: int | None, page_size: int
+) -> None:
     """List bank transactions within a date range.
 
     Defaults to last 7 days. Supports filtering by categories and pagination.
@@ -144,7 +159,9 @@ def transactions_cmd(from_date: str | None, to_date: str | None, categories: str
         from_date = (datetime.now(tz=UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
 
     _run(
-        lambda c: c.get_transactions(from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size),
+        lambda c: c.get_transactions(
+            from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
+        ),
         table_columns=["posted_at", "description", "amount", "type"],
         table_title="Transactions",
         table_key="transactions",
@@ -154,11 +171,17 @@ def transactions_cmd(from_date: str | None, to_date: str | None, categories: str
 
 @click.command("spending")
 @click.option(
-    "--group-by", default="category",
+    "--group-by",
+    default="category",
     type=click.Choice(["category", "merchant", "time_period"], case_sensitive=False),
     help="Group by. Default: category.",
 )
-@click.option("--time-period", default="month", type=click.Choice(["day", "week", "month"], case_sensitive=False), help="Time period for aggregation. Default: month.")
+@click.option(
+    "--time-period",
+    default="month",
+    type=click.Choice(["day", "week", "month"], case_sensitive=False),
+    help="Time period for aggregation. Default: month.",
+)
 @click.option("--days", type=int, default=30, help="Number of days to analyze. Default: 30.")
 @click.option("--start-date", default=None, help="Start date (YYYY-MM-DD). Overrides --days.")
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
@@ -190,12 +213,14 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
     if is_interactive():
         summary = data.get("summary", {})
         output_table(
-            [{
-                "total": _fmt_dollar(summary.get("total_spending")),
-                "daily_avg": _fmt_dollar(summary.get("average_daily_spending")),
-                "monthly_avg": _fmt_dollar(summary.get("average_monthly_spending")),
-                "transactions": summary.get("total_transactions", ""),
-            }],
+            [
+                {
+                    "total": _fmt_dollar(summary.get("total_spending")),
+                    "daily_avg": _fmt_dollar(summary.get("average_daily_spending")),
+                    "monthly_avg": _fmt_dollar(summary.get("average_monthly_spending")),
+                    "transactions": summary.get("total_transactions", ""),
+                }
+            ],
             ["total", "daily_avg", "monthly_avg", "transactions"],
             title="Spending Summary",
         )
@@ -205,7 +230,10 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
         elif spending.get("by_merchant"):
             items, name_fn = spending["by_merchant"], lambda i: i.get("merchant_name", "")
         elif spending.get("by_time_period"):
-            items, name_fn = spending["by_time_period"], lambda i: f"{i.get('start_date', '')} → {i.get('end_date', '')}"
+            items, name_fn = (
+                spending["by_time_period"],
+                lambda i: f"{i.get('start_date', '')} → {i.get('end_date', '')}",
+            )
         else:
             items = None
         if items:
@@ -313,12 +341,14 @@ def recurring_cmd() -> None:
 
 @click.command("balance-history")
 @click.option(
-    "--date-range", default="3M",
+    "--date-range",
+    default="3M",
     type=click.Choice(["1M", "3M", "6M", "1Y", "ALL"], case_sensitive=False),
     help="Date range. Default: 3M.",
 )
 @click.option(
-    "--time-period", default="week",
+    "--time-period",
+    default="week",
     type=click.Choice(["day", "week", "month"], case_sensitive=False),
     help="Aggregation period. Default: week.",
 )
