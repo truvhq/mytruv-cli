@@ -21,6 +21,12 @@ detect_arch() {
 
 OS=$(detect_os)
 ARCH=$(detect_arch)
+
+if [ "$OS" = "unknown" ] || [ "$ARCH" = "unknown" ]; then
+    echo "Error: unsupported platform: $(uname -s) $(uname -m)" >&2
+    exit 1
+fi
+
 OUTPUT_NAME="${BINARY_NAME}-${OS}-${ARCH}"
 
 echo "Building ${OUTPUT_NAME}..."
@@ -41,4 +47,9 @@ echo ""
 echo "Build complete: dist/${OUTPUT_NAME}"
 
 echo "Running smoke test..."
-./dist/${OUTPUT_NAME} --help > /dev/null 2>&1 && echo "Smoke test passed." || echo "Smoke test failed!"
+if "./dist/${OUTPUT_NAME}" --help > /dev/null 2>&1; then
+    echo "Smoke test passed."
+else
+    echo "Smoke test failed!" >&2
+    exit 1
+fi

@@ -105,3 +105,34 @@ class TestBuildScriptOutputNaming:
     def test_runs_smoke_test(self):
         content = BUILD_SCRIPT.read_text()
         assert "--help" in content, "build.sh should run a smoke test with --help"
+
+
+class TestBuildScriptSmokeTestFatal:
+    def test_smoke_test_failure_is_fatal(self):
+        """If the smoke test fails, build.sh must exit non-zero."""
+        content = BUILD_SCRIPT.read_text()
+        # The script must NOT use the pattern: cmd && echo ok || echo fail
+        # because || suppresses the exit code under set -e
+        assert '|| echo "Smoke test failed!"' not in content, (
+            "Smoke test uses || fallback which suppresses non-zero exit under set -e"
+        )
+
+
+class TestBuildScriptUnknownPlatformGuard:
+    def test_unknown_os_aborts(self):
+        """build.sh must abort when detect_os returns 'unknown'."""
+        content = BUILD_SCRIPT.read_text()
+        assert '"unknown"' in content or "'unknown'" in content
+        # Must have a guard that checks for unknown and exits
+        assert "unknown" in content and "exit 1" in content, (
+            "build.sh must guard against unknown OS/ARCH and exit 1"
+        )
+
+
+class TestBuildScriptQuoting:
+    def test_smoke_test_path_is_quoted(self):
+        """The binary path in the smoke test must be quoted."""
+        content = BUILD_SCRIPT.read_text()
+        assert '"./dist/${OUTPUT_NAME}"' in content or '"./dist/$OUTPUT_NAME"' in content, (
+            "Binary path in smoke test must be double-quoted"
+        )

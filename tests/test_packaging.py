@@ -22,6 +22,19 @@ class TestPyprojectBuildDeps:
         deps = self._get_dev_deps()
         assert any("ordered-set" in d.lower() for d in deps), "pyproject.toml should have ordered-set in dev deps"
 
+    def test_has_pyyaml_dependency(self):
+        deps = self._get_dev_deps()
+        assert any("pyyaml" in d.lower() for d in deps), (
+            "pyyaml should be in [project.optional-dependencies] dev, not [dependency-groups]"
+        )
+
+    def test_no_dependency_groups_section(self):
+        """All dev deps should be in [project.optional-dependencies], not split across [dependency-groups]."""
+        config = tomllib.loads(PYPROJECT.read_text())
+        assert "dependency-groups" not in config, (
+            "pyproject.toml should not use [dependency-groups] — consolidate into [project.optional-dependencies]"
+        )
+
     def test_has_hatchling_build_backend(self):
         config = tomllib.loads(PYPROJECT.read_text())
         backend = config["build-system"]["build-backend"]

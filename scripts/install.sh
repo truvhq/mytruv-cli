@@ -37,13 +37,16 @@ main() {
     echo "Extracting..."
     tar -xzf "${tmpdir}/${asset}" -C "${tmpdir}"
 
+    extracted="${BINARY_NAME}-${os}-${arch}"
+
     echo "Installing to ${INSTALL_DIR}..."
     if [ -w "$INSTALL_DIR" ]; then
-        mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+        mv "${tmpdir}/${extracted}" "${INSTALL_DIR}/${BINARY_NAME}"
+        chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
     else
-        sudo mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+        sudo mv "${tmpdir}/${extracted}" "${INSTALL_DIR}/${BINARY_NAME}"
+        sudo chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
     fi
-    chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     echo ""
     echo "${BINARY_NAME} ${version} installed successfully!"
@@ -84,8 +87,8 @@ verify_checksum() {
     elif command -v shasum >/dev/null 2>&1; then
         actual=$(shasum -a 256 "${dir}/${file}" | awk '{print $1}')
     else
-        echo "Warning: no sha256 tool found, skipping checksum verification" >&2
-        return 0
+        echo "Error: no sha256 tool found, cannot verify download" >&2
+        exit 1
     fi
 
     if [ "$expected" != "$actual" ]; then

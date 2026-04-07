@@ -105,6 +105,24 @@ class TestInstallChecksumVerification:
             result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
             assert result.returncode != 0, "Checksum verification should fail for tampered file"
 
+    def test_checksum_fails_when_no_sha256_tool(self):
+        """verify_checksum must hard-fail (not skip) when no sha256 tool is found."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.tar.gz"
+            test_file.write_text("hello world")
+            checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
+            checksum_file.write_text("abc123  test.tar.gz")
+
+            # Shadow both sha256sum and shasum so neither is found
+            full_cmd = (
+                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                f'sha256sum() {{ return 1; }}; shasum() {{ return 1; }}; '
+                f'command() {{ return 1; }}; '
+                f'verify_checksum "{tmpdir}" "test.tar.gz"'
+            )
+            result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
+            assert result.returncode != 0, "verify_checksum must fail when no sha256 tool is available"
+
     def test_checksum_error_message_on_mismatch(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             test_file = Path(tmpdir) / "test.tar.gz"
@@ -148,3 +166,29 @@ class TestInstallScriptFlow:
     def test_script_uses_github_releases_url(self):
         content = INSTALL_SCRIPT.read_text()
         assert "github.com" in content and "/releases/" in content
+
+    def test_mv_source_uses_platform_qualified_name(self):
+        """After extraction, the binary is named mytruv-{os}-{arch}, not mytruv.
+        The mv command source must NOT be just ${BINARY_NAME} — it must include os/arch."""
+        content = INSTALL_SCRIPT.read_text()
+        import re
+
+        # Find all mv lines in the script
+        mv_lines = [line.strip() for line in content.splitlines() if line.strip().startswith("mv ") or "mv " in line]
+        # At least one mv line should reference the platform-qualified name
+        # It must NOT be just ${tmpdir}/${BINARY_NAME} (which would be "mytruv" not "mytruv-darwin-arm64")
+        has_platform_mv = any(
+            "${os}" in line or "$os" in line or "extracted" in line.lower()
+            for line in mv_lines
+        )
+        assert has_platform_mv, (
+            f"mv commands use bare BINARY_NAME but the extracted binary is named "
+            f"mytruv-{{os}}-{{arch}}. mv lines: {mv_lines}"
+        )
+
+    def test_chmod_uses_sudo_when_needed(self):
+        """chmod +x must use sudo when the install dir is not writable."""
+        content = INSTALL_SCRIPT.read_text()
+        assert "sudo chmod" in content, (
+            "chmod must use sudo on the sudo path, since the file is owned by root"
+        )

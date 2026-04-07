@@ -19,6 +19,7 @@ dev = [
     "ruff>=0.8",
     "nuitka>=2.0",
     "ordered-set>=4.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -40,8 +41,3 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "A", "SIM"]
-
-[dependency-groups]
-dev = [
-    "pyyaml>=6.0.3",
-]
