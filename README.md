@@ -2,104 +2,59 @@
 
 Command-line interface for accessing your [MyTruv](https://mytruv.com) financial data.
 
-Authenticate with your MyTruv account via browser-based OAuth and query balances, transactions, income, spending, and more — all from the terminal.
-
 ## Install
 
 ```bash
-# pip
-pip install .
-
-# pipx (isolated install)
-pipx install .
-
-# uv
-uv tool install .
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/scripts/install.sh | sh
 ```
 
-After installation, the `mytruv` command is available globally.
-
-You can also run without installing:
+Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-# With uv
-cd mytruv-cli && uv run mytruv --help
-
-# With Python directly
-python -m mytruv_cli --help
+uv tool install git+https://github.com/truvhq/mytruv-cli.git
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Log in (opens browser)
-mytruv auth login
-
-# 2. View your accounts
-mytruv links
-
-# 3. Check balances
-mytruv balances
-
-# 4. Pull recent transactions
-mytruv transactions
-
-# 5. Log out
-mytruv auth logout
+mytruv auth login          # authenticate via browser
+mytruv links               # list connected accounts
+mytruv balances            # check balances
+mytruv transactions        # pull recent transactions
 ```
 
 ## Commands
 
-### Authentication
-
 | Command | Description |
 |---|---|
-| `mytruv auth login` | Authenticate via browser-based OAuth |
-| `mytruv auth login --no-browser` | Print login URL (for headless/remote machines) |
-| `mytruv auth logout` | Log out and revoke tokens |
-| `mytruv auth status` | Show current authentication status |
+| `auth login` | Authenticate via browser-based OAuth |
+| `auth login --no-browser` | Print login URL for headless machines |
+| `auth logout` | Log out and revoke tokens |
+| `auth status` | Show authentication status |
+| `user` | Show your user profile |
+| `links` | List connected bank accounts and payroll providers |
+| `balances` | Aggregated balances by account type |
+| `liabilities` | Aggregated liabilities (credit cards, loans) |
+| `transactions` | Bank transactions (supports `--from`, `--to`, `--categories`, `--page`) |
+| `spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`) |
+| `income` | Income report from payroll and bank sources (supports `--days`) |
+| `recurring` | Recurring transactions (subscriptions, deposits) |
+| `balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
 
-### Financial Data
+## Global Flags
 
-| Command | Description |
-|---|---|
-| `mytruv user` | Show your user profile |
-| `mytruv links` | List connected bank accounts and payroll providers |
-| `mytruv balances` | Aggregated balances by account type |
-| `mytruv liabilities` | Aggregated liabilities (credit cards, loans) |
-| `mytruv transactions` | Bank transactions, last 7 days (supports `--from`, `--to`, `--categories`, `--page`) |
-| `mytruv spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`) |
-| `mytruv income` | Income report from payroll and bank sources (supports `--days`) |
-| `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
-| `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
-
-### Global Options
-
-| Option | Description |
+| Flag | Description |
 |---|---|
 | `--version` | Show version |
 | `--help` | Show help |
 
-## Agent / Automation Usage
+## Agent Mode
 
-mytruv is designed to be used by AI agents and scripts:
+mytruv is designed for AI agents and scripts:
 
 - **stdout** is always valid JSON — pipe it, parse it, chain it
-- **stderr** has human-friendly messages (colors, tables) — ignored by parsers
-- **Errors** are structured JSON on stdout with meaningful exit codes:
-
-```
-Exit 0 — success
-Exit 1 — error (API error, network error, etc.)
-Exit 2 — authentication required
-```
-
-Error format:
-```json
-{"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}
-```
-
-### Examples
+- **stderr** has human-friendly messages — ignored by parsers
+- Exit codes: `0` success, `1` error, `2` auth required
 
 ```bash
 # Parse balances with jq
@@ -108,34 +63,44 @@ mytruv balances | jq '.aggregated_balances[] | select(.type == "CHECKING")'
 # Get transaction count
 mytruv transactions | jq '.count'
 
-# Check if authenticated (exit code 0 = yes)
+# Check auth status in a script
 mytruv auth status | jq -e '.authenticated' > /dev/null 2>&1 && echo "logged in"
-
-# Use in a script
-if ! mytruv auth status | jq -e '.authenticated' > /dev/null 2>&1; then
-    echo "Please run: mytruv auth login"
-    exit 1
-fi
 ```
-
-### Interactive vs Piped
 
 When run in a terminal (TTY), commands display rich tables. When piped, output is raw JSON:
 
 ```bash
-# Terminal: shows a formatted table
-mytruv balances
-
-# Piped: outputs JSON
-mytruv balances | cat
-mytruv balances > balances.json
+mytruv balances            # terminal: formatted table
+mytruv balances | cat      # piped: JSON
 ```
 
-## How Authentication Works
+## Development
 
-`mytruv auth login` opens your browser for secure OAuth login. Tokens refresh automatically — no need to re-login unless your session fully expires.
+```bash
+git clone https://github.com/truvhq/mytruv-cli.git
+cd mytruv-cli
+uv sync
+uv run pre-commit install --install-hooks
+```
 
-## Requirements
+Run tests:
 
-- Python 3.13+
-- A MyTruv account with at least one connected financial account
+```bash
+uv run pytest tests/ -v
+```
+
+Run linting:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+Build a standalone binary:
+
+```bash
+./scripts/build.sh
+```
+
+## License
+
+MIT
