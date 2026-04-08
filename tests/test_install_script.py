@@ -10,6 +10,12 @@ REPO_ROOT = Path(__file__).parent.parent
 INSTALL_SCRIPT = REPO_ROOT / "scripts" / "install.sh"
 
 
+def _source_and_run(commands):
+    """Source install.sh with main() suppressed, then run the given commands."""
+    full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
+    return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
+
+
 class TestInstallScriptExists:
     def test_script_exists(self):
         assert INSTALL_SCRIPT.exists()
@@ -66,10 +72,6 @@ class TestInstallDetectOS:
 class TestInstallChecksumVerification:
     """Test verify_checksum function with real files."""
 
-    def _source_and_run(self, commands):
-        full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
-        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
-
     @staticmethod
     def _compute_sha256(path):
         """Platform-aware SHA256 computation (sha256sum on Linux, shasum on macOS)."""
@@ -93,7 +95,7 @@ class TestInstallChecksumVerification:
             checksum_file.write_text(checksum)
 
             # Run verify_checksum
-            result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            result = _source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
             assert result.returncode == 0, f"Checksum verification should pass: {result.stderr}"
 
     def test_checksum_fails_for_tampered_file(self):
@@ -107,7 +109,7 @@ class TestInstallChecksumVerification:
             checksum_file.write_text("0000000000000000000000000000000000000000000000000000000000000000  test.tar.gz")
 
             # Run verify_checksum — should fail
-            result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            result = _source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
             assert result.returncode != 0, "Checksum verification should fail for tampered file"
 
     def test_checksum_fails_when_no_sha256_tool(self):
@@ -134,7 +136,7 @@ class TestInstallChecksumVerification:
             checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
             checksum_file.write_text("")
 
-            result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            result = _source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
             assert result.returncode != 0, "verify_checksum must fail when checksum file is empty"
 
     def test_checksum_error_message_on_mismatch(self):
@@ -145,7 +147,7 @@ class TestInstallChecksumVerification:
             checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
             checksum_file.write_text("badchecksum  test.tar.gz")
 
-            result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            result = _source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
             assert result.returncode != 0, "verify_checksum should exit non-zero on mismatch"
             assert "checksum mismatch" in result.stderr.lower()
 
@@ -239,10 +241,6 @@ class TestInstallScriptFlow:
 
 class TestInstallFailurePaths:
     """Test failure branches in install.sh."""
-
-    def _source_and_run(self, commands):
-        full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
-        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
 
     def test_unsupported_os_aborts(self):
         """install.sh must abort when detect_os returns empty string."""

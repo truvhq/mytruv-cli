@@ -53,6 +53,11 @@ main() {
     extracted="${BINARY_NAME}-${os}-${arch}"
     tar -xzf "${tmpdir}/${asset}" -C "${tmpdir}" "${extracted}"
 
+    if [ -L "${tmpdir}/${extracted}" ]; then
+        echo "Error: extracted file is a symlink, refusing to install" >&2
+        exit 1
+    fi
+
     echo "Installing to ${INSTALL_DIR}..."
     if [ -w "$INSTALL_DIR" ]; then
         mv "${tmpdir}/${extracted}" "${INSTALL_DIR}/${BINARY_NAME}"

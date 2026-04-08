@@ -7,7 +7,7 @@ Command-line interface for accessing your [MyTruv](https://mytruv.com) financial
 Download and run the install script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/scripts/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/v0.1.0/scripts/install.sh -o install.sh
 sh install.sh
 ```
 
