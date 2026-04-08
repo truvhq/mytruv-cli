@@ -72,7 +72,7 @@ def _run(
 @click.command("balances")
 @agent_option
 def balances_cmd() -> None:
-    """Show aggregated balances across all connected accounts.
+    """Show aggregated balances across all accounts.
 
     Groups balances by account type (CHECKING, SAVINGS, CREDIT_CARD, etc.)
     and currency. Includes total account count.
@@ -97,7 +97,7 @@ def balances_cmd() -> None:
 @click.command("liabilities")
 @agent_option
 def liabilities_cmd() -> None:
-    """Show aggregated liabilities across all connected accounts.
+    """Show aggregated liabilities across all accounts.
 
     Includes credit cards and loans with current balances and credit limits.
 
@@ -157,13 +157,14 @@ def transactions_cmd(
 
     if not from_date:
         from_date = (datetime.now(tz=UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
+    effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
     _run(
         lambda c: c.get_transactions(
             from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
         ),
         table_columns=["posted_at", "description", "amount", "type"],
-        table_title="Transactions",
+        table_title=f"Transactions ({from_date} to {effective_to})",
         table_key="transactions",
         format_row=lambda r: {**r, "amount": _fmt_dollar(r.get("amount"))},
     )
@@ -187,7 +188,7 @@ def transactions_cmd(
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
 @agent_option
 def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | None, end_date: str | None) -> None:
-    """Analyze spending patterns by category, merchant, or time period.
+    """Analyze spending by category, merchant, or period.
 
     Returns categorized spending breakdown with totals and summaries.
     In table mode, shows summary + top categories or merchants.
@@ -208,10 +209,13 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
     if end_date:
         params["end_date"] = end_date
 
+    effective_end = end_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
+
     data = _fetch(lambda c: c.get_spending(**params))
 
     if is_interactive():
         summary = data.get("summary", {})
+        period_label = f"{params['start_date']} to {effective_end}"
         output_table(
             [
                 {
@@ -222,7 +226,7 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
                 }
             ],
             ["total", "daily_avg", "monthly_avg", "transactions"],
-            title="Spending Summary",
+            title=f"Spending Summary ({period_label})",
         )
         spending = data.get("spending", {})
         if spending.get("by_category"):
@@ -255,7 +259,7 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
 @click.option("--days", type=int, default=90, help="Number of days to include (1-365). Default: 90.")
 @agent_option
 def income_cmd(days: int) -> None:
-    """Show aggregated income report from payroll and bank sources.
+    """Show income report from payroll and bank sources.
 
     Combines income from payroll providers and bank transactions.
     Each employment record includes data_source ('payroll' or 'financial_accounts').
@@ -296,7 +300,7 @@ def income_cmd(days: int) -> None:
 @click.command("recurring")
 @agent_option
 def recurring_cmd() -> None:
-    """Detect recurring transactions (subscriptions, income deposits, etc.).
+    """Detect recurring transactions (subscriptions, etc.).
 
     Identifies recurring inflows and outflows from connected bank accounts.
     In table mode, shows outflows (expenses) and inflows (income) separately.
@@ -354,7 +358,7 @@ def recurring_cmd() -> None:
 )
 @agent_option
 def balance_history_cmd(date_range: str, time_period: str) -> None:
-    """Show balance trends over time (assets, liabilities, net worth).
+    """Show balance trends over time (assets, net worth).
 
     Returns time series data points for the specified date range and
     aggregation period.
@@ -364,7 +368,7 @@ def balance_history_cmd(date_range: str, time_period: str) -> None:
     _run(
         lambda c: c.get_balance_history(date_range=date_range, time_period=time_period),
         table_columns=["date", "assets", "liabilities", "net_worth"],
-        table_title="Balance History",
+        table_title=f"Balance History ({date_range}, by {time_period})",
         table_key="time_series",
         format_row=lambda r: {
             "date": r.get("date", ""),
