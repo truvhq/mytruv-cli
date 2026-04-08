@@ -4,15 +4,26 @@ Command-line interface for accessing your [MyTruv](https://mytruv.com) financial
 
 ## Install
 
+Download and run the install script:
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/scripts/install.sh -o install.sh
+sh install.sh
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install git+https://github.com/truvhq/mytruv-cli.git
+uv tool install git+https://github.com/truvhq/mytruv-cli.git@v0.1.0
 ```
+
+The install script supports environment variables for automation:
+
+| Variable | Description |
+|---|---|
+| `INSTALL_DIR` | Override install location (default: `/usr/local/bin`) |
+| `MYTRUV_VERSION` | Pin a specific version (default: latest release) |
+| `GITHUB_TOKEN` | Authenticate GitHub API requests to avoid rate limits |
 
 ## Quick Start
 
@@ -36,7 +47,7 @@ mytruv transactions        # pull recent transactions
 | `balances` | Aggregated balances by account type |
 | `liabilities` | Aggregated liabilities (credit cards, loans) |
 | `transactions` | Bank transactions (supports `--from`, `--to`, `--categories`, `--page`) |
-| `spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`) |
+| `spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`) |
 | `income` | Income report from payroll and bank sources (supports `--days`) |
 | `recurring` | Recurring transactions (subscriptions, deposits) |
 | `balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
@@ -55,6 +66,9 @@ mytruv is designed for AI agents and scripts:
 - **stdout** is always valid JSON — pipe it, parse it, chain it
 - **stderr** has human-friendly messages — ignored by parsers
 - Exit codes: `0` success, `1` error, `2` auth required
+- Errors are structured JSON on stdout: `{"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}`
+
+> **Note:** Checksums verify download integrity (corruption detection). They do not protect against a compromised distribution channel. Review the [install script](scripts/install.sh) before running it.
 
 ```bash
 # Parse balances with jq

@@ -94,9 +94,11 @@ class TestWorkflowBuildMatrix:
             if not uses:
                 continue
             # Check the ref after @ is a commit SHA (40 hex chars), not a tag like v4
+            import re
+
             ref = uses.split("@")[-1] if "@" in uses else ""
-            assert len(ref) >= 40, (
-                f"Action '{uses}' should be pinned to a commit SHA, not a mutable tag"
+            assert re.fullmatch(r"[0-9a-f]{40}", ref), (
+                f"Action '{uses}' should be pinned to a full 40-char hex commit SHA, not '{ref}'"
             )
 
 
@@ -155,13 +157,11 @@ class TestWorkflowReleaseJob:
         steps = workflow["jobs"]["release"]["steps"]
         download_step = next((s for s in steps if "download-artifact" in s.get("uses", "")), None)
         assert download_step is not None, "Expected download-artifact step not found"
-        assert download_step is not None
 
     def test_release_creates_github_release(self, workflow):
         steps = workflow["jobs"]["release"]["steps"]
         release_step = next((s for s in steps if "action-gh-release" in s.get("uses", "")), None)
         assert release_step is not None, "Expected action-gh-release step not found"
-        assert release_step is not None
 
     def test_release_attaches_binaries_and_checksums(self, workflow):
         steps = workflow["jobs"]["release"]["steps"]

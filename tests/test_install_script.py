@@ -38,7 +38,7 @@ class TestInstallScriptConfig:
         content = INSTALL_SCRIPT.read_text()
         assert 'BINARY_NAME="mytruv"' in content or "BINARY_NAME='mytruv'" in content
 
-    def test_installs_to_usr_local_bin(self):
+    def test_default_install_dir_is_usr_local_bin(self):
         content = INSTALL_SCRIPT.read_text()
         assert "/usr/local/bin" in content
 
@@ -71,6 +71,17 @@ class TestInstallChecksumVerification:
         full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
         return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
 
+    @staticmethod
+    def _compute_sha256(path):
+        """Platform-aware SHA256 computation (sha256sum on Linux, shasum on macOS)."""
+        import shutil
+
+        if shutil.which("sha256sum"):
+            r = subprocess.run(["sha256sum", str(path)], capture_output=True, text=True)
+        else:
+            r = subprocess.run(["shasum", "-a", "256", str(path)], capture_output=True, text=True)
+        return r.stdout.strip()
+
     def test_checksum_passes_for_valid_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a test file
@@ -78,10 +89,7 @@ class TestInstallChecksumVerification:
             test_file.write_text("hello world")
 
             # Generate correct checksum
-            result = subprocess.run(
-                ["shasum", "-a", "256", str(test_file)], capture_output=True, text=True
-            )
-            checksum = result.stdout.strip()
+            checksum = self._compute_sha256(test_file)
 
             # Write checksum file
             checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
@@ -113,15 +121,24 @@ class TestInstallChecksumVerification:
             checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
             checksum_file.write_text("abc123  test.tar.gz")
 
-            # Shadow both sha256sum and shasum so neither is found
+            # Hide sha256sum and shasum by using a PATH with no real tools
             full_cmd = (
                 f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
-                f'sha256sum() {{ return 1; }}; shasum() {{ return 1; }}; '
-                f'command() {{ return 1; }}; '
-                f'verify_checksum "{tmpdir}" "test.tar.gz"'
+                f'PATH=/nonexistent verify_checksum "{tmpdir}" "test.tar.gz"'
             )
             result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
             assert result.returncode != 0, "verify_checksum must fail when no sha256 tool is available"
+
+    def test_checksum_fails_when_checksum_file_empty(self):
+        """verify_checksum must fail when the .sha256 file is empty."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.tar.gz"
+            test_file.write_text("hello world")
+            checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
+            checksum_file.write_text("")
+
+            result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            assert result.returncode != 0, "verify_checksum must fail when checksum file is empty"
 
     def test_checksum_error_message_on_mismatch(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -132,6 +149,7 @@ class TestInstallChecksumVerification:
             checksum_file.write_text("badchecksum  test.tar.gz")
 
             result = self._source_and_run(f'verify_checksum "{tmpdir}" "test.tar.gz"')
+            assert result.returncode != 0, "verify_checksum should exit non-zero on mismatch"
             assert "checksum mismatch" in result.stderr.lower()
 
 
@@ -169,21 +187,16 @@ class TestInstallScriptFlow:
 
     def test_mv_source_uses_platform_qualified_name(self):
         """After extraction, the binary is named mytruv-{os}-{arch}, not mytruv.
-        The mv command source must NOT be just ${BINARY_NAME} — it must include os/arch."""
+        The mv command must reference the ${extracted} variable."""
         content = INSTALL_SCRIPT.read_text()
-        import re
 
         # Find all mv lines in the script
         mv_lines = [line.strip() for line in content.splitlines() if line.strip().startswith("mv ") or "mv " in line]
-        # At least one mv line should reference the platform-qualified name
-        # It must NOT be just ${tmpdir}/${BINARY_NAME} (which would be "mytruv" not "mytruv-darwin-arm64")
-        has_platform_mv = any(
-            "${os}" in line or "$os" in line or "extracted" in line.lower()
-            for line in mv_lines
-        )
-        assert has_platform_mv, (
-            f"mv commands use bare BINARY_NAME but the extracted binary is named "
-            f"mytruv-{{os}}-{{arch}}. mv lines: {mv_lines}"
+        # At least one mv line should reference the ${extracted} variable
+        has_extracted_ref = any("${extracted}" in line or "$extracted" in line for line in mv_lines)
+        assert has_extracted_ref, (
+            f"mv commands must reference ${{extracted}} (platform-qualified name). "
+            f"mv lines: {mv_lines}"
         )
 
     def test_chmod_uses_sudo_when_needed(self):
@@ -192,3 +205,108 @@ class TestInstallScriptFlow:
         assert "sudo chmod" in content, (
             "chmod must use sudo on the sudo path, since the file is owned by root"
         )
+
+    def test_install_dir_overridable(self):
+        """INSTALL_DIR should be overridable via environment variable."""
+        content = INSTALL_SCRIPT.read_text()
+        assert "${INSTALL_DIR:-" in content, (
+            "INSTALL_DIR should use ${INSTALL_DIR:-/usr/local/bin} for env var override"
+        )
+
+    def test_mytruv_version_overridable(self):
+        """MYTRUV_VERSION should bypass the API call."""
+        content = INSTALL_SCRIPT.read_text()
+        assert "MYTRUV_VERSION" in content
+
+    def test_github_token_supported(self):
+        """GITHUB_TOKEN should be passed to the API call."""
+        content = INSTALL_SCRIPT.read_text()
+        assert "GITHUB_TOKEN" in content
+
+    def test_version_format_validated(self):
+        """Version string must be validated before use."""
+        content = INSTALL_SCRIPT.read_text()
+        assert "v[0-9]*" in content or 'v[0-9]' in content, (
+            "Version string must be validated to match v* pattern"
+        )
+
+    def test_tar_extracts_only_expected_binary(self):
+        """tar must extract only the expected binary, not all archive entries."""
+        content = INSTALL_SCRIPT.read_text()
+        # Find the tar extraction line
+        tar_lines = [line.strip() for line in content.splitlines() if "tar -xzf" in line]
+        assert any("${extracted}" in line or "$extracted" in line for line in tar_lines), (
+            f"tar must extract only the named binary. tar lines: {tar_lines}"
+        )
+
+
+class TestInstallFailurePaths:
+    """Test failure branches in install.sh."""
+
+    def _source_and_run(self, commands):
+        full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
+        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
+
+    def test_unsupported_os_aborts(self):
+        """install.sh must abort when detect_os returns empty string."""
+        result = subprocess.run(
+            [
+                "sh",
+                "-c",
+                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                f'detect_os() {{ echo ""; }}; '
+                f'main',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, "install.sh must exit non-zero for unsupported OS"
+        assert "unsupported platform" in result.stderr.lower()
+
+    def test_unsupported_arch_aborts(self):
+        """install.sh must abort when detect_arch returns empty string."""
+        result = subprocess.run(
+            [
+                "sh",
+                "-c",
+                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                f'detect_arch() {{ echo ""; }}; '
+                f'main',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, "install.sh must exit non-zero for unsupported arch"
+        assert "unsupported platform" in result.stderr.lower()
+
+    def test_empty_version_aborts(self):
+        """install.sh must abort when get_latest_version returns empty."""
+        result = subprocess.run(
+            [
+                "sh",
+                "-c",
+                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                f'get_latest_version() {{ echo ""; }}; '
+                f'main',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, "install.sh must exit non-zero for empty version"
+        assert "could not determine" in result.stderr.lower()
+
+    def test_invalid_version_format_aborts(self):
+        """install.sh must abort when version doesn't match v[0-9]* pattern."""
+        result = subprocess.run(
+            [
+                "sh",
+                "-c",
+                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                f'get_latest_version() {{ echo "not-a-version"; }}; '
+                f'main',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, "install.sh must exit non-zero for invalid version format"
+        assert "unexpected version" in result.stderr.lower()

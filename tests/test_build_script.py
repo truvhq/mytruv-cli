@@ -41,24 +41,14 @@ class TestBuildDetectPlatform:
     """Test detect_os and detect_arch functions."""
 
     def _run_function(self, function_name):
-        """Source only the functions from the script (skip execution lines)."""
-        # Extract function definitions and call them
+        """Source individual function definitions from build.sh and call them."""
         result = subprocess.run(
             [
                 "sh",
                 "-c",
-                f"""
-                detect_os() {{
-                    $(sed -n '/^detect_os()/,/^}}/p' "{BUILD_SCRIPT}" | tail -n +2)
-                }}
-                detect_arch() {{
-                    $(sed -n '/^detect_arch()/,/^}}/p' "{BUILD_SCRIPT}" | tail -n +2)
-                }}
-                # Source the actual functions from the script
-                eval "$(grep -A 20 '^detect_os()' "{BUILD_SCRIPT}" | head -7)"
-                eval "$(grep -A 20 '^detect_arch()' "{BUILD_SCRIPT}" | head -7)"
-                {function_name}
-                """,
+                f'eval "$(sed -n \'/^detect_os()/,/^}}/p\' "{BUILD_SCRIPT}")"; '
+                f'eval "$(sed -n \'/^detect_arch()/,/^}}/p\' "{BUILD_SCRIPT}")"; '
+                f'{function_name}',
             ],
             capture_output=True,
             text=True,
@@ -111,10 +101,26 @@ class TestBuildScriptSmokeTestFatal:
     def test_smoke_test_failure_is_fatal(self):
         """If the smoke test fails, build.sh must exit non-zero."""
         content = BUILD_SCRIPT.read_text()
-        # The script must NOT use the pattern: cmd && echo ok || echo fail
-        # because || suppresses the exit code under set -e
+        # The smoke test must use if/else/exit 1 pattern, not || which suppresses set -e
         assert '|| echo "Smoke test failed!"' not in content, (
             "Smoke test uses || fallback which suppresses non-zero exit under set -e"
+        )
+        # Verify the correct if/else/exit 1 structure is present
+        assert "exit 1" in content, "build.sh must have exit 1 for smoke test failure"
+        # The smoke test block should use the if pattern
+        lines = content.splitlines()
+        smoke_section = []
+        in_smoke = False
+        for line in lines:
+            if "smoke test" in line.lower() or "Smoke test" in line:
+                in_smoke = True
+            if in_smoke:
+                smoke_section.append(line)
+                if "fi" in line.strip():
+                    break
+        smoke_block = "\n".join(smoke_section)
+        assert "if" in smoke_block and "exit 1" in smoke_block, (
+            "Smoke test must use if/else/exit 1 pattern to be fatal under set -e"
         )
 
 
@@ -123,9 +129,25 @@ class TestBuildScriptUnknownPlatformGuard:
         """build.sh must abort when detect_os returns 'unknown'."""
         content = BUILD_SCRIPT.read_text()
         assert '"unknown"' in content or "'unknown'" in content
-        # Must have a guard that checks for unknown and exits
         assert "unknown" in content and "exit 1" in content, (
             "build.sh must guard against unknown OS/ARCH and exit 1"
+        )
+
+    def test_unknown_platform_exits_nonzero_at_runtime(self):
+        """build.sh must actually exit non-zero when uname returns an unknown value."""
+        result = subprocess.run(
+            [
+                "sh",
+                "-c",
+                # Override uname to return an unsupported platform, then source the script
+                f'uname() {{ echo "FreeBSD"; }}; export -f uname 2>/dev/null; '
+                f'. "{BUILD_SCRIPT}"',
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode != 0, (
+            f"build.sh must exit non-zero for unknown platform, got rc={result.returncode}"
         )
 
 
