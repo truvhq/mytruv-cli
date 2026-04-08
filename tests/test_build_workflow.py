@@ -1,5 +1,6 @@
 """Tests for .github/workflows/build-binaries.yml"""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -94,8 +95,6 @@ class TestWorkflowBuildMatrix:
             if not uses:
                 continue
             # Check the ref after @ is a commit SHA (40 hex chars), not a tag like v4
-            import re
-
             ref = uses.split("@")[-1] if "@" in uses else ""
             assert re.fullmatch(r"[0-9a-f]{40}", ref), (
                 f"Action '{uses}' should be pinned to a full 40-char hex commit SHA, not '{ref}'"

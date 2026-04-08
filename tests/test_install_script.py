@@ -1,12 +1,10 @@
 """Tests for scripts/install.sh"""
 
-import os
+import shutil
 import stat
 import subprocess
 import tempfile
 from pathlib import Path
-
-import pytest
 
 REPO_ROOT = Path(__file__).parent.parent
 INSTALL_SCRIPT = REPO_ROOT / "scripts" / "install.sh"
@@ -52,6 +50,7 @@ class TestInstallDetectOS:
             ["sh", "-c", f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {function_name}'],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         return result.stdout.strip()
 
@@ -69,13 +68,11 @@ class TestInstallChecksumVerification:
 
     def _source_and_run(self, commands):
         full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
-        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
+        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
 
     @staticmethod
     def _compute_sha256(path):
         """Platform-aware SHA256 computation (sha256sum on Linux, shasum on macOS)."""
-        import shutil
-
         if shutil.which("sha256sum"):
             r = subprocess.run(["sha256sum", str(path)], capture_output=True, text=True)
         else:
@@ -126,7 +123,7 @@ class TestInstallChecksumVerification:
                 f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
                 f'PATH=/nonexistent verify_checksum "{tmpdir}" "test.tar.gz"'
             )
-            result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
+            result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
             assert result.returncode != 0, "verify_checksum must fail when no sha256 tool is available"
 
     def test_checksum_fails_when_checksum_file_empty(self):
@@ -226,8 +223,8 @@ class TestInstallScriptFlow:
     def test_version_format_validated(self):
         """Version string must be validated before use."""
         content = INSTALL_SCRIPT.read_text()
-        assert "v[0-9]*" in content or 'v[0-9]' in content, (
-            "Version string must be validated to match v* pattern"
+        assert "v[0-9]" in content, (
+            "Version string must be validated to match semver-like pattern"
         )
 
     def test_tar_extracts_only_expected_binary(self):
@@ -245,7 +242,7 @@ class TestInstallFailurePaths:
 
     def _source_and_run(self, commands):
         full_cmd = f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; {commands}'
-        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True)
+        return subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
 
     def test_unsupported_os_aborts(self):
         """install.sh must abort when detect_os returns empty string."""
@@ -259,6 +256,7 @@ class TestInstallFailurePaths:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         assert result.returncode != 0, "install.sh must exit non-zero for unsupported OS"
         assert "unsupported platform" in result.stderr.lower()
@@ -275,6 +273,7 @@ class TestInstallFailurePaths:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         assert result.returncode != 0, "install.sh must exit non-zero for unsupported arch"
         assert "unsupported platform" in result.stderr.lower()
@@ -291,6 +290,7 @@ class TestInstallFailurePaths:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         assert result.returncode != 0, "install.sh must exit non-zero for empty version"
         assert "could not determine" in result.stderr.lower()
@@ -307,6 +307,7 @@ class TestInstallFailurePaths:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         assert result.returncode != 0, "install.sh must exit non-zero for invalid version format"
         assert "unexpected version" in result.stderr.lower()

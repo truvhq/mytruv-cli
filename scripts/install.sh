@@ -5,6 +5,12 @@ REPO="truvhq/mytruv-cli"
 BINARY_NAME="mytruv"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
+# Validate INSTALL_DIR is an absolute path
+case "$INSTALL_DIR" in
+    /*) ;;
+    *) echo "Error: INSTALL_DIR must be an absolute path: '${INSTALL_DIR}'" >&2; exit 1 ;;
+esac
+
 main() {
     os=$(detect_os)
     arch=$(detect_arch)
@@ -16,7 +22,7 @@ main() {
 
     version="${MYTRUV_VERSION:-}"
     if [ -z "$version" ]; then
-        version=$(get_latest_version)
+        version=$(get_latest_version) || true
     fi
     if [ -z "$version" ]; then
         echo "Error: could not determine latest version." >&2
@@ -25,7 +31,7 @@ main() {
     fi
 
     case "$version" in
-        v[0-9]*) ;;
+        v[0-9]*.[0-9]*.[0-9]*) ;;
         *) echo "Error: unexpected version format: '${version}'" >&2; exit 1 ;;
     esac
 
@@ -78,14 +84,14 @@ detect_arch() {
 }
 
 get_latest_version() {
-    auth_header=""
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-        auth_header="-H \"Authorization: Bearer ${GITHUB_TOKEN}\""
-    fi
-    eval curl --retry 3 --retry-delay 2 --max-time 30 --connect-timeout 10 -fsSL \
-        "$auth_header" \
-        "https://api.github.com/repos/${REPO}/releases/latest" \
-        | grep '"tag_name"' \
+        curl --retry 3 --retry-delay 2 --max-time 30 --connect-timeout 10 -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${REPO}/releases/latest"
+    else
+        curl --retry 3 --retry-delay 2 --max-time 30 --connect-timeout 10 -fsSL \
+            "https://api.github.com/repos/${REPO}/releases/latest"
+    fi | grep '"tag_name"' \
         | head -1 \
         | sed 's/.*"tag_name": *"//;s/".*//'
 }

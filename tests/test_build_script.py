@@ -4,8 +4,6 @@ import stat
 import subprocess
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).parent.parent
 BUILD_SCRIPT = REPO_ROOT / "scripts" / "build.sh"
 
@@ -52,6 +50,7 @@ class TestBuildDetectPlatform:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         return result.stdout.strip()
 
@@ -139,12 +138,12 @@ class TestBuildScriptUnknownPlatformGuard:
             [
                 "sh",
                 "-c",
-                # Override uname to return an unsupported platform, then source the script
-                f'uname() {{ echo "FreeBSD"; }}; export -f uname 2>/dev/null; '
-                f'. "{BUILD_SCRIPT}"',
+                # Override uname in the same subshell (POSIX-compatible, no export -f)
+                f'uname() {{ echo "FreeBSD"; }}; . "{BUILD_SCRIPT}"',
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
         assert result.returncode != 0, (
             f"build.sh must exit non-zero for unknown platform, got rc={result.returncode}"
