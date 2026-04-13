@@ -69,6 +69,12 @@ def set_client_credentials(client_id: str, client_secret: str) -> None:
     save_config(cfg)
 
 
+def clear_client_credentials() -> None:
+    cfg = load_config()
+    cfg.pop("client", None)
+    save_config(cfg)
+
+
 def get_tokens() -> tuple[str, str, int] | None:
     """Returns (access_token, refresh_token, expires_at) or None."""
     cfg = load_config()
