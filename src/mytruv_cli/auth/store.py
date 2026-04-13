@@ -1,6 +1,6 @@
 import time
 
-from mytruv_cli.config.settings import clear_tokens, get_tokens
+from mytruv_cli.config.settings import clear_client_credentials, clear_tokens, get_tokens
 
 _EXPIRY_BUFFER = 30  # refresh 30s before actual expiry
 
@@ -31,3 +31,4 @@ def needs_refresh() -> bool:
 
 def clear_auth() -> None:
     clear_tokens()
+    clear_client_credentials()
