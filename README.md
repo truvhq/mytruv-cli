@@ -7,6 +7,16 @@ Authenticate with your MyTruv account via browser-based OAuth and query balances
 ## Install
 
 ```bash
+# One-liner (installs uv if needed, then mytruv)
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/install.sh | sh
+
+# Or with uv directly
+uv tool install git+https://github.com/truvhq/mytruv-cli.git
+```
+
+From a local checkout:
+
+```bash
 # pip
 pip install .
 
