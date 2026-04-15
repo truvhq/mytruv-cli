@@ -80,6 +80,13 @@ mytruv auth logout
 | `--version` | Show version |
 | `--help` | Show help |
 
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `MYTRUV_SERVER_URL` | Override the API server URL (default: `https://api.mytruv.com`). Useful for pointing at staging or a local dev server without editing the config file. |
+| `MYTRUV_CONFIG_DIR` | Override the config directory (default: `~/.config/mytruv`). |
+
 ## Agent / Automation Usage
 
 mytruv is designed to be used by AI agents and scripts:
