@@ -8,7 +8,7 @@ try:
 except ImportError:
     fcntl = None  # type: ignore[assignment]
 
-import tomllib
+import tomli as tomllib
 
 import tomli_w
 
