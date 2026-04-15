@@ -144,5 +144,5 @@ mytruv balances > balances.json
 
 ## Requirements
 
-- Python 3.13+
+- Python 3.10+
 - A MyTruv account with at least one connected financial account

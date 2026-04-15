@@ -8,8 +8,7 @@ try:
 except ImportError:
     fcntl = None  # type: ignore[assignment]
 
-import tomllib
-
+import tomli as tomllib
 import tomli_w
 
 from mytruv_cli.config.constants import DEFAULT_SERVER_URL

@@ -3,11 +3,12 @@ name = "mytruv"
 version = "0.1.0"
 description = "CLI for accessing your MyTruv financial data"
 license = "MIT"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "click>=8.1",
     "httpx>=0.25",
     "tomli-w>=1.0",
+    "tomli>=2.0",
     "rich>=13.0",
 ]
 
@@ -33,7 +34,7 @@ packages = ["src/mytruv_cli"]
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py310"
 line-length = 120
 
 [tool.ruff.lint]
