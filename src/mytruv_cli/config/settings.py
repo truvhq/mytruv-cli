@@ -101,5 +101,7 @@ def clear_tokens() -> None:
 
 
 def get_server_url() -> str:
+    if url := os.environ.get("MYTRUV_SERVER_URL"):
+        return url
     cfg = load_config()
     return cfg.get("server_url", DEFAULT_SERVER_URL)

@@ -68,3 +68,15 @@ def test_custom_server_url(tmp_path) -> None:
         tomli_w.dump({"server_url": "https://custom.example.com"}, f)
 
     assert get_server_url() == "https://custom.example.com"
+
+
+def test_server_url_env_var_overrides_config(tmp_path, monkeypatch) -> None:
+    import tomli_w
+
+    cfg_path = config_path()
+    cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cfg_path, "wb") as f:
+        tomli_w.dump({"server_url": "https://custom.example.com"}, f)
+
+    monkeypatch.setenv("MYTRUV_SERVER_URL", "https://staging.mytruv.com")
+    assert get_server_url() == "https://staging.mytruv.com"
