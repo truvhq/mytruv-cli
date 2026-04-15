@@ -80,3 +80,8 @@ def test_server_url_env_var_overrides_config(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setenv("MYTRUV_SERVER_URL", "https://staging.mytruv.com")
     assert get_server_url() == "https://staging.mytruv.com"
+
+
+def test_server_url_whitespace_env_var_ignored(monkeypatch) -> None:
+    monkeypatch.setenv("MYTRUV_SERVER_URL", "   ")
+    assert get_server_url() == "https://api.mytruv.com"
