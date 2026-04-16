@@ -1,3 +1,4 @@
+import os
 import time
 
 from mytruv_cli.config.settings import clear_client_credentials, clear_tokens, get_tokens
@@ -6,11 +7,13 @@ _EXPIRY_BUFFER = 30  # refresh 30s before actual expiry
 
 
 def is_authenticated() -> bool:
-    return get_tokens() is not None
+    return bool(os.environ.get("MYTRUV_TOKEN", "").strip()) or get_tokens() is not None
 
 
 def get_valid_token() -> str | None:
     """Return access_token if it exists and is not expired (with buffer). Else None."""
+    if token := os.environ.get("MYTRUV_TOKEN", "").strip():
+        return token
     tokens = get_tokens()
     if not tokens:
         return None

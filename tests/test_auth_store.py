@@ -39,6 +39,23 @@ def test_expired_token_returns_none() -> None:
     assert get_valid_token() is None  # but expired
 
 
+def test_mytruv_token_env_var(monkeypatch) -> None:
+    monkeypatch.setenv("MYTRUV_TOKEN", "ci-token")
+    assert is_authenticated()
+    assert get_valid_token() == "ci-token"
+
+
+def test_mytruv_token_whitespace_ignored(monkeypatch) -> None:
+    monkeypatch.setenv("MYTRUV_TOKEN", "   ")
+    assert get_valid_token() is None
+
+
+def test_mytruv_token_overrides_config(monkeypatch) -> None:
+    set_tokens(access_token="config-token", refresh_token="ref", expires_at=int(time.time()) + 3600)
+    monkeypatch.setenv("MYTRUV_TOKEN", "ci-token")
+    assert get_valid_token() == "ci-token"
+
+
 def test_clear_auth() -> None:
     set_tokens(access_token="tok", refresh_token="ref", expires_at=int(time.time()) + 3600)
     assert is_authenticated()
