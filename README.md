@@ -90,20 +90,13 @@ mytruv auth logout
 
 ### Headless / CI Authentication
 
-For environments where a browser is unavailable, obtain a token once via `mytruv auth login` on a local machine, then inject it as an environment variable:
+For environments where a browser is unavailable, inject a token via `MYTRUV_TOKEN`:
 
 ```bash
-# Obtain a token locally (one-time setup)
-mytruv auth login
-
-# Extract the token from the config file
-cat ~/.config/mytruv/config.toml
-
-# In CI, inject it as a secret
 MYTRUV_TOKEN=<your_token> mytruv balances
 ```
 
-With `MYTRUV_TOKEN` set, all commands run authenticated without touching the config file. This follows the same pattern as `GITHUB_TOKEN`, `STRIPE_SECRET_KEY`, and other API CLIs.
+**Important:** `MYTRUV_TOKEN` is a short-lived access token. When set via env var it is used as-is and is not auto-refreshed — once it expires, commands will fail with an auth error. For CI pipelines, obtain a fresh token at the start of each job or use a secret manager to rotate it on a schedule.
 
 ## Agent / Automation Usage
 

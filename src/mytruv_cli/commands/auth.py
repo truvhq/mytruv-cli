@@ -1,10 +1,12 @@
+import os
+
 import click
 
 from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
 from mytruv_cli.auth.store import clear_auth, is_authenticated
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
-from mytruv_cli.output.formatter import agent_option, output_error, output_json, output_success
+from mytruv_cli.output.formatter import agent_option, output_error, output_info, output_json, output_success
 
 
 @click.group("auth")
@@ -66,6 +68,9 @@ def logout_cmd() -> None:
         revoke_token(server_url)
 
     clear_auth()
+
+    if os.environ.get("MYTRUV_TOKEN", "").strip():
+        output_info("[yellow]Warning:[/yellow] MYTRUV_TOKEN is set in your environment. Unset it to fully log out.")
 
     output_success("Logged out")
     output_json({"status": "logged_out"})
