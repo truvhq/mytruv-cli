@@ -113,6 +113,7 @@ def _start_callback_server() -> tuple[http.server.HTTPServer, int]:
     for port in [CALLBACK_PORT, 0]:
         try:
             server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+            server.timeout = 0.5
             actual_port = server.server_address[1]
             return server, actual_port
         except OSError:
