@@ -73,6 +73,12 @@ mytruv auth logout
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
 
+### MCP Server
+
+| Command | Description |
+|---|---|
+| `mytruv mcp` | Start MCP stdio server for AI agent integration |
+
 ### Global Options
 
 | Option | Description |
@@ -137,6 +143,16 @@ mytruv balances
 mytruv balances | cat
 mytruv balances > balances.json
 ```
+
+## Gemini CLI Extension
+
+mytruv works as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension:
+
+```bash
+gemini extensions install path/to/gemini-extension.json
+```
+
+This gives Gemini access to your financial data through the MCP protocol. You must install the CLI first so that `mytruv` is available on your `$PATH`.
 
 ## How Authentication Works
 
