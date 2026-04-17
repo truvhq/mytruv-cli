@@ -106,7 +106,7 @@ def balances_cmd() -> None:
     Returns JSON: {"total_accounts": int, "accounts": [...], "aggregated_balances": [...]}
     """
     _run(
-        lambda c: c.get_balances(),
+        lambda c: c.get_balances_v2(),
         table_columns=["type", "currency", "balance", "available", "accounts"],
         table_title="Aggregated Balances",
         table_key="aggregated_balances",
@@ -134,7 +134,7 @@ def liabilities_cmd() -> None:
     if fmt == OutputFormat.CSV:
         output_csv_unsupported()
 
-    data = _fetch(lambda c: c.get_liabilities())
+    data = _fetch(lambda c: c.get_liabilities_v2())
 
     if fmt == OutputFormat.JSON:
         output_json(data)
@@ -192,7 +192,7 @@ def transactions_cmd(
     effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
     _run(
-        lambda c: c.get_transactions(
+        lambda c: c.get_transactions_v2(
             from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
         ),
         table_columns=["posted_at", "description", "amount", "type"],
@@ -248,7 +248,7 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
     if fmt == OutputFormat.CSV:
         output_csv_unsupported()
 
-    data = _fetch(lambda c: c.get_spending(**params))
+    data = _fetch(lambda c: c.get_spending_v2(**params))
 
     if fmt == OutputFormat.JSON:
         output_json(data)
@@ -354,7 +354,7 @@ def recurring_cmd() -> None:
     if fmt == OutputFormat.CSV:
         output_csv_unsupported()
 
-    data = _fetch(lambda c: c.get_recurring())
+    data = _fetch(lambda c: c.get_recurring_v2())
 
     if fmt == OutputFormat.JSON:
         output_json(data)
@@ -414,7 +414,7 @@ def balance_history_cmd(date_range: str, time_period: str) -> None:
     Returns JSON: {"time_series": [...], "date_range": "...", "start_date": "...", "end_date": "..."}
     """
     _run(
-        lambda c: c.get_balance_history(date_range=date_range, time_period=time_period),
+        lambda c: c.get_balance_history_v2(date_range=date_range, time_period=time_period),
         table_columns=["date", "assets", "liabilities", "net_worth"],
         table_title=f"Balance History ({date_range}, by {time_period})",
         table_key="time_series",

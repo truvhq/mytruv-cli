@@ -55,7 +55,7 @@ def test_auth_logout_when_not_authenticated(runner: CliRunner) -> None:
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
-        "get_balances",
+        "get_balances_v2",
         {
             "total_accounts": 2,
             "aggregated_balances": [
@@ -80,7 +80,7 @@ def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
-        "get_transactions",
+        "get_transactions_v2",
         {
             "count": 1,
             "transactions": [
@@ -105,7 +105,7 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
-        "get_spending",
+        "get_spending_v2",
         {
             "spending": {
                 "by_category": [
@@ -158,7 +158,7 @@ def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
-        "get_recurring",
+        "get_recurring_v2",
         {
             "recurring_transactions": {
                 "outflows": [
@@ -185,7 +185,7 @@ def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 @patch("mytruv_cli.commands.data.TruvClient")
 def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
-        "get_balance_history",
+        "get_balance_history_v2",
         {
             "time_series": [
                 {"date": "2025-03-01", "assets": "50000.00", "liabilities": "10000.00", "net_worth": "40000.00"}
@@ -254,7 +254,7 @@ def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
     from mytruv_cli.client.api import AuthRequired
 
-    mock_cls.return_value = _mock_client_error("get_balances", AuthRequired())
+    mock_cls.return_value = _mock_client_error("get_balances_v2", AuthRequired())
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 2
@@ -266,7 +266,7 @@ def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
     from mytruv_cli.client.api import APIError
 
-    mock_cls.return_value = _mock_client_error("get_balances", APIError(404, "not_found", "No data found"))
+    mock_cls.return_value = _mock_client_error("get_balances_v2", APIError(404, "not_found", "No data found"))
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 1
