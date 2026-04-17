@@ -175,10 +175,7 @@ def transactions_cmd(
                 f"[yellow]Warning:[/yellow] Showing {len(transactions)} of {total_count} transactions. "
                 f"Use --page and --page-size to paginate."
             )
-        rows = [
-            {**r, "amount": _fmt_dollar(r.get("amount"))}
-            for r in transactions
-        ]
+        rows = [{**r, "amount": _fmt_dollar(r.get("amount"))} for r in transactions]
         output_table(
             rows,
             ["posted_at", "description", "amount", "type"],
