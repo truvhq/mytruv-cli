@@ -192,7 +192,9 @@ def transactions_cmd(
 @click.option("--start-date", default=None, help="Start date (YYYY-MM-DD). Overrides --days.")
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
 @agent_option
-def spending_cmd(group_by: str, time_period: str, days: int | None, start_date: str | None, end_date: str | None) -> None:
+def spending_cmd(
+    group_by: str, time_period: str, days: int | None, start_date: str | None, end_date: str | None
+) -> None:
     """Analyze spending by category, merchant, or period.
 
     Returns categorized spending breakdown with totals and summaries.
