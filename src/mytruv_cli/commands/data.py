@@ -170,7 +170,7 @@ def transactions_cmd(
     truncated = total_count > len(transactions)
 
     if is_interactive():
-        if truncated:
+        if truncated and page is None:
             output_info(
                 f"[yellow]Warning:[/yellow] Showing {len(transactions)} of {total_count} transactions. "
                 f"Use --page and --page-size to paginate."
