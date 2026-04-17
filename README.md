@@ -84,7 +84,6 @@ mytruv auth logout
 
 | Variable | Description |
 |---|---|
-| `MYTRUV_SERVER_URL` | Override the API server URL (default: `https://api.mytruv.com`). Useful for pointing at staging or a local dev server without editing the config file. |
 | `MYTRUV_CONFIG_DIR` | Override the config directory (default: `~/.config/mytruv`). |
 
 ## Agent / Automation Usage
