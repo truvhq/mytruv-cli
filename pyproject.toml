@@ -5,9 +5,6 @@ description = "CLI for accessing your MyTruv financial data"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
-authors = [
-    { name = "Truv", email = "support@truv.com" },
-]
 dependencies = [
     "click>=8.1",
     "httpx>=0.25",

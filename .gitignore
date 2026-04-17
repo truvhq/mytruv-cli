@@ -13,3 +13,5 @@ build/
 credentials.*
 secrets.*
 CLAUDE.local.md
+CLAUDE.md
+docs/plans/
