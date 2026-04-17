@@ -80,24 +80,16 @@ def test_output_csv_flag_produces_csv(mock_cls: MagicMock, runner: CliRunner) ->
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
-def test_transactions_csv_has_raw_amount(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client(
-        "get_transactions_v2",
-        {
-            "count": 1,
-            "transactions": [
-                {
-                    "posted_at": "2025-01-01",
-                    "description": "Coffee",
-                    "amount": "-5.00",
-                    "type": "DEBIT",
-                    "category": "Food",
-                }
-            ],
-        },
-    )
+def test_transactions_csv_streams_from_server_export(mock_cls: MagicMock, runner: CliRunner) -> None:
+    csv_body = b"posted_at,description,amount,type,category\n2025-01-01,Coffee,-5.00,DEBIT,Food\n"
+    mock = _mock_client("export_transactions_csv", csv_body)
+    mock_cls.return_value = mock
+
     result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--output", "csv"])
     assert result.exit_code == 0
+    # Command must hit the server-side export endpoint, not the local JSON->CSV path.
+    mock.export_transactions_csv.assert_called_once()
+    mock.get_transactions_v2.assert_not_called()
     rows = list(csv.DictReader(io.StringIO(result.stdout)))
     assert rows[0]["amount"] == "-5.00"
     assert "$" not in result.stdout

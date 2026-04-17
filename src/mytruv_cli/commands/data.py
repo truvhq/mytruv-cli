@@ -13,6 +13,7 @@ from mytruv_cli.output.formatter import (
     output_json,
     output_network_error,
     output_option,
+    output_raw_csv,
     output_table,
     resolved_format,
 )
@@ -36,7 +37,7 @@ def _fmt_pct(val: str | None) -> str:
         return str(val)
 
 
-def _fetch(fetch_fn: Callable[[TruvClient], dict]) -> dict:
+def _fetch(fetch_fn: Callable[[TruvClient], object]) -> object:
     """Create client, call fetch_fn, handle auth/network/API errors. Returns data or exits."""
     try:
         with TruvClient() as client:
@@ -214,6 +215,22 @@ def transactions_cmd(
         from_date = (datetime.now(tz=UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
     effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
+    if resolved_format() == OutputFormat.CSV:
+        content = _fetch(
+            lambda c: c.export_transactions_csv(
+                from_date=from_date,
+                to_date=to_date,
+                transaction_type=transaction_type,
+                account_ids=account_ids,
+                categories=categories,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                merchant=merchant,
+            )
+        )
+        output_raw_csv(content)
+        return
+
     _run(
         lambda c: c.get_transactions_v2(
             from_date=from_date,
@@ -233,7 +250,6 @@ def transactions_cmd(
         table_title=f"Transactions ({from_date} to {effective_to})",
         table_key="transactions",
         format_row=lambda r: {**r, "amount": _fmt_dollar(r.get("amount"))},
-        csv_columns=["posted_at", "description", "amount", "type", "category"],
     )
 
 
