@@ -179,7 +179,11 @@ def transactions_cmd(
             {**r, "amount": _fmt_dollar(r.get("amount"))}
             for r in transactions
         ]
-        output_table(rows, ["posted_at", "description", "amount", "type"], title=f"Transactions ({from_date} to {effective_to})")
+        output_table(
+            rows,
+            ["posted_at", "description", "amount", "type"],
+            title=f"Transactions ({from_date} to {effective_to})",
+        )
     else:
         if truncated:
             data["truncated"] = True
