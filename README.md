@@ -84,7 +84,6 @@ mytruv auth logout
 
 | Variable | Description |
 |---|---|
-| `MYTRUV_TOKEN` | Inject an access token directly, bypassing the OAuth flow. Useful for CI pipelines and agent environments where browser auth is impossible. |
 | `MYTRUV_CONFIG_DIR` | Override the config directory (default: `~/.config/mytruv`). |
 
 ## Agent / Automation Usage
