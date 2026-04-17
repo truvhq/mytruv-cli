@@ -1,6 +1,7 @@
 """Tests for CLI commands with mocked API client."""
 
 import json
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -130,6 +131,43 @@ def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["summary"]["total_spending"] == "1500.00"
+
+
+@pytest.mark.parametrize("days_arg", ["0", "-1", "-30"])
+def test_spending_days_invalid(days_arg: str, runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["spending", "--days", days_arg, "--agent"])
+    assert result.exit_code != 0
+    assert "invalid" in result.output.lower() or "error" in result.output.lower()
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_spending_days_default_time_period(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
+    mock_cls.return_value = mock
+    runner.invoke(cli, ["spending", "--group-by", "time_period", "--agent"])
+    call_kwargs = mock.get_spending.call_args.kwargs
+    expected = (datetime.now(tz=UTC) - timedelta(days=180)).strftime("%Y-%m-%d")
+    assert call_kwargs["start_date"] == expected
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_spending_days_default_other_group_by(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
+    mock_cls.return_value = mock
+    runner.invoke(cli, ["spending", "--group-by", "category", "--agent"])
+    call_kwargs = mock.get_spending.call_args.kwargs
+    expected = (datetime.now(tz=UTC) - timedelta(days=30)).strftime("%Y-%m-%d")
+    assert call_kwargs["start_date"] == expected
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_spending_days_explicit_overrides_time_period_default(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
+    mock_cls.return_value = mock
+    runner.invoke(cli, ["spending", "--group-by", "time_period", "--days", "30", "--agent"])
+    call_kwargs = mock.get_spending.call_args.kwargs
+    expected = (datetime.now(tz=UTC) - timedelta(days=30)).strftime("%Y-%m-%d")
+    assert call_kwargs["start_date"] == expected
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
