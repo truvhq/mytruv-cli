@@ -269,8 +269,16 @@ def transactions_cmd(
 @click.option("--days", type=int, default=30, help="Number of days to analyze. Default: 30.")
 @click.option("--start-date", default=None, help="Start date (YYYY-MM-DD). Overrides --days.")
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
+@click.option("--top", "top", type=int, default=10, help="Max breakdown rows shown in table mode. Default: 10.")
 @output_option
-def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | None, end_date: str | None) -> None:
+def spending_cmd(
+    group_by: str,
+    time_period: str,
+    days: int,
+    start_date: str | None,
+    end_date: str | None,
+    top: int,
+) -> None:
     """Analyze spending by category, merchant, or period.
 
     Returns categorized spending breakdown with totals and summaries.
@@ -338,20 +346,20 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
                 "transactions": item.get("transaction_count", ""),
                 "share": _fmt_pct(item.get("percentage_of_total", item.get("percentage"))),
             }
-            for item in items[:10]
+            for item in items[:top]
         ]
         output_table(rows, ["name", "amount", "transactions", "share"], title="Breakdown")
 
 
 @click.command("income")
 @click.option("--days", type=int, default=90, help="Number of days to include (1-365). Default: 90.")
+@click.option("--top", "top", type=int, default=5, help="Max recent pay statements shown per employer. Default: 5.")
 @output_option
-def income_cmd(days: int) -> None:
+def income_cmd(days: int, top: int) -> None:
     """Show income report from payroll and bank sources.
 
     Combines income from payroll providers and bank transactions.
     Each employment record includes data_source ('payroll' or 'financial_accounts').
-    In table mode, shows the 5 most recent pay statements.
 
     Returns JSON: {"employments": [...]}
     """
@@ -377,7 +385,7 @@ def income_cmd(days: int) -> None:
         output_info(f"\n[bold]{employer}[/bold]  ({source})")
         if income_val or pay_freq:
             output_info(f"  Income: {income_val}  Frequency: {pay_freq}")
-        stmts = emp.get("statements", [])[:5]
+        stmts = emp.get("statements", [])[:top]
         if stmts:
             rows = [
                 {
