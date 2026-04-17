@@ -7,6 +7,7 @@ from enum import StrEnum
 
 import click
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.table import Table
 
 from mytruv_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
@@ -118,6 +119,12 @@ def output_info(message: str) -> None:
     """Print a rich-formatted message to stderr. Silent in non-interactive modes."""
     if is_interactive():
         _console.print(message)
+
+
+def render_markdown(text: str) -> None:
+    """Render a Markdown string to stderr via the shared console (respects --no-color)."""
+    if is_interactive():
+        _console.print(Markdown(text))
 
 
 def output_error(error: str, message: str, exit_code: int = EXIT_ERROR, hint: str | None = None) -> None:

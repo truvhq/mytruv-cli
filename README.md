@@ -73,6 +73,7 @@ mytruv auth logout
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (`--date-range`, `--time-period`) |
 | `mytruv subscription` | Show the active subscription, if any |
+| `mytruv insights` | AI-generated insights about your finances |
 
 ### Global Options
 
