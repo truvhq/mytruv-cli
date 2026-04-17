@@ -34,7 +34,7 @@ class _AliasGroup(click.Group):
         raise click.UsageError(message, ctx=ctx)
 
 
-@click.group(cls=_AliasGroup, context_settings={"max_content_width": 120})
+@click.group(cls=_AliasGroup, context_settings={"max_content_width": 120, "help_option_names": ["-h", "--help"]})
 @click.version_option(package_name="mytruv")
 def cli() -> None:
     """mytruv — Access your financial data from the command line.
