@@ -263,6 +263,14 @@ class TruvClient:
         result = self._request("GET", "/v2/users/transactions/export", params=params, raw=True)
         return result if isinstance(result, bytes) else b""
 
+    def get_transaction_summary(self, *, from_date: str | None = None, to_date: str | None = None) -> dict:
+        params: dict[str, str] = {}
+        if from_date:
+            params["transacted_at_from"] = from_date
+        if to_date:
+            params["transacted_at_to"] = to_date
+        return self._request("GET", "/v2/users/transactions/summary", params=params)
+
     def get_spending_v2(self, **params: object) -> dict:
         return self._request("GET", "/v2/users/spending", params=params)
 
@@ -275,3 +283,16 @@ class TruvClient:
             "/v2/users/balance-history",
             params={"date_range": date_range, "time_period": time_period},
         )
+
+    # ── Insights & subscription ──
+
+    def get_insights(self) -> dict:
+        return self._request("GET", "/v2/user/insights")
+
+    def get_subscription(self) -> dict | None:
+        try:
+            return self._request("GET", "/v1/billing/subscriptions/active")
+        except APIError as e:
+            if e.status_code == 404:
+                return None
+            raise

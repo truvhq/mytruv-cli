@@ -90,6 +90,31 @@ def test_request_raises_api_error_on_4xx() -> None:
     assert exc.value.message == "Nope"
 
 
+def test_get_subscription_returns_none_on_404() -> None:
+    client = _client_with_token()
+    resp = _make_response(
+        404,
+        json_body={"error": "not_found", "detail": "No active subscription"},
+        content=b'{"error":"not_found","detail":"No active subscription"}',
+        content_type="application/json",
+    )
+    with patch.object(client._client, "request", return_value=resp):
+        result = client.get_subscription()
+    assert result is None
+
+
+def test_get_subscription_reraises_non_404_api_errors() -> None:
+    client = _client_with_token()
+    resp = _make_response(
+        500,
+        json_body={"error": "server_error", "detail": "oops"},
+        content=b'{"error":"server_error","detail":"oops"}',
+        content_type="application/json",
+    )
+    with patch.object(client._client, "request", return_value=resp), pytest.raises(APIError):
+        client.get_subscription()
+
+
 def test_export_transactions_csv_returns_bytes() -> None:
     client = _client_with_token()
     csv_body = b"posted_at,description,amount\n2025-01-01,Coffee,-5.00\n"
