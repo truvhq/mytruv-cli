@@ -1,6 +1,7 @@
 import difflib
 
 import click
+from click.shell_completion import BashComplete, FishComplete, ZshComplete
 
 from mytruv_cli.commands.auth import auth_group
 from mytruv_cli.commands.data import (
@@ -56,6 +57,24 @@ def cli() -> None:
     """
 
 
+@click.command("completion")
+@click.argument("shell", type=click.Choice(["bash", "zsh", "fish"]))
+@click.pass_context
+def completion_cmd(ctx: click.Context, shell: str) -> None:
+    """Print shell completion script for SHELL.
+
+    \b
+    Setup (add to your shell config):
+        bash:  source <(mytruv completion bash)
+        zsh:   source <(mytruv completion zsh)
+        fish:  mytruv completion fish | source
+    """
+    prog = ctx.find_root().info_name
+    complete_var = f"_{prog.upper().replace('-', '_')}_COMPLETE"
+    classes = {"bash": BashComplete, "zsh": ZshComplete, "fish": FishComplete}
+    click.echo(classes[shell](cli, {}, prog, complete_var).source())
+
+
 cli.add_command(auth_group)
 cli.add_command(user_cmd)
 cli.add_command(links_cmd)
@@ -66,3 +85,4 @@ cli.add_command(spending_cmd)
 cli.add_command(income_cmd)
 cli.add_command(recurring_cmd)
 cli.add_command(balance_history_cmd)
+cli.add_command(completion_cmd)

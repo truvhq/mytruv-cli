@@ -45,8 +45,27 @@ def test_all_commands_registered() -> None:
         "income",
         "recurring",
         "balance-history",
+        "completion",
     }
     assert expected == set(cli.commands.keys())
+
+
+def test_completion_bash(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["completion", "bash"])
+    assert result.exit_code == 0
+    assert "mytruv" in result.output
+
+
+def test_completion_zsh(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["completion", "zsh"])
+    assert result.exit_code == 0
+    assert "mytruv" in result.output
+
+
+def test_completion_fish(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["completion", "fish"])
+    assert result.exit_code == 0
+    assert "mytruv" in result.output
 
 
 def test_auth_subcommands() -> None:
