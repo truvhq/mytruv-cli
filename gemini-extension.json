@@ -1,0 +1,11 @@
+{
+  "name": "mytruv",
+  "version": "1.0.0",
+  "description": "Personal finance — income, transactions, balances, and spending insights",
+  "mcpServers": {
+    "mytruv": {
+      "command": "mytruv",
+      "args": ["mcp"]
+    }
+  }
+}

@@ -10,6 +10,7 @@ dependencies = [
     "tomli-w>=1.0",
     "tomli>=2.0",
     "rich>=13.0",
+    "mcp>=1.0",
 ]
 
 [project.optional-dependencies]
