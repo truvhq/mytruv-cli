@@ -80,11 +80,32 @@ mytruv auth logout
 | `--version` | Show version |
 | `--help` | Show help |
 
+### Per-command Output Options
+
+Every data command accepts:
+
+| Option | Description |
+|---|---|
+| `--output table\|json\|csv`, `-o` | Override the output format. Defaults to `table` in a TTY, `json` when piped. |
+| `--json` | Shorthand for `--output json`. |
+| `--no-color` | Disable colored output. |
+
+CSV output emits raw (unformatted) values and is supported on single-table commands (`balances`, `transactions`, `balance-history`, `links`, `user`). Commands that render multiple tables (`spending`, `income`, `recurring`, `liabilities`) exit with `csv_unsupported` — use `--output json` instead.
+
+### Aliases
+
+| Alias | Command |
+|---|---|
+| `tx` | `transactions` |
+| `bal` | `balances` |
+| `hist` | `balance-history` |
+| `rec` | `recurring` |
+
 ## Agent / Automation Usage
 
 mytruv is designed to be used by AI agents and scripts:
 
-- **stdout** is always valid JSON — pipe it, parse it, chain it
+- **stdout** is machine-readable: valid JSON by default, or valid CSV with `--output csv`
 - **stderr** has human-friendly messages (colors, tables) — ignored by parsers
 - **Errors** are structured JSON on stdout with meaningful exit codes:
 
@@ -96,7 +117,7 @@ Exit 2 — authentication required
 
 Error format:
 ```json
-{"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}
+{"error": "auth_required", "message": "Not authenticated.", "hint": "Run 'mytruv auth login' first."}
 ```
 
 ### Examples
