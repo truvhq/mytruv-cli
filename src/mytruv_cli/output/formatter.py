@@ -27,7 +27,7 @@ def is_interactive() -> bool:
 def agent_option(fn):
     """Decorator that adds --agent flag to a command."""
 
-    @click.option("--agent", is_flag=True, default=False, help="Force JSON output (agent-friendly).")
+    @click.option("--agent", "-a", is_flag=True, default=False, help="Force JSON output (agent-friendly).")
     @functools.wraps(fn)
     def wrapper(*args, agent: bool, **kwargs):
         if agent:
