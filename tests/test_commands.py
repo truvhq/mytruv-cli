@@ -103,6 +103,45 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_forwards_v2_filters(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_transactions_v2", {"count": 0, "transactions": []})
+    mock_cls.return_value = mock
+
+    result = runner.invoke(
+        cli,
+        [
+            "transactions",
+            "--from",
+            "2025-01-01",
+            "--sort",
+            "amount",
+            "--order",
+            "asc",
+            "--type",
+            "debit",
+            "--account",
+            "acc_1,acc_2",
+            "--min-amount",
+            "10",
+            "--max-amount",
+            "500",
+            "--merchant",
+            "Starbucks",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    _, kwargs = mock.get_transactions_v2.call_args
+    assert kwargs["sort_by"] == "amount"
+    assert kwargs["sort_order"] == "asc"
+    assert kwargs["transaction_type"] == "debit"
+    assert kwargs["account_ids"] == "acc_1,acc_2"
+    assert kwargs["min_amount"] == 10.0
+    assert kwargs["max_amount"] == 500.0
+    assert kwargs["merchant"] == "Starbucks"
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
 def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_spending_v2",

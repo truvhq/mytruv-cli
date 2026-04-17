@@ -156,32 +156,55 @@ def liabilities_cmd() -> None:
 
 
 @click.command("transactions")
+@click.option("--from", "from_date", default=None, help="Start date (YYYY-MM-DD). Defaults to 7 days ago.")
+@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
 @click.option(
-    "--from",
-    "from_date",
-    default=None,
-    help="Start date (YYYY-MM-DD). Defaults to 7 days ago.",
+    "--sort",
+    "sort_by",
+    default="date",
+    type=click.Choice(["date", "amount"], case_sensitive=False),
+    help="Sort field. Default: date.",
 )
 @click.option(
-    "--to",
-    "to_date",
-    default=None,
-    help="End date (YYYY-MM-DD). Defaults to today.",
+    "--order",
+    "sort_order",
+    default="desc",
+    type=click.Choice(["asc", "desc"], case_sensitive=False),
+    help="Sort direction. Default: desc.",
 )
 @click.option(
-    "--categories",
+    "--type",
+    "transaction_type",
     default=None,
-    help="Comma-separated category filter. Example: 'Income,Transfer'",
+    type=click.Choice(["debit", "credit"], case_sensitive=False),
+    help="Filter by transaction type.",
 )
+@click.option("--account", "account_ids", default=None, help="Comma-separated account IDs.")
+@click.option("--categories", default=None, help="Comma-separated category names. Example: 'Income,Transfer'")
+@click.option("--min-amount", type=float, default=None, help="Minimum absolute amount.")
+@click.option("--max-amount", type=float, default=None, help="Maximum absolute amount.")
+@click.option("--merchant", default=None, help="Filter by merchant name (substring match).")
 @click.option("--page", type=int, default=None, help="Page number (1-based). Omit to fetch all.")
 @click.option("--page-size", type=int, default=500, help="Results per page (10-500). Default: 500.")
 @output_option
 def transactions_cmd(
-    from_date: str | None, to_date: str | None, categories: str | None, page: int | None, page_size: int
+    from_date: str | None,
+    to_date: str | None,
+    sort_by: str,
+    sort_order: str,
+    transaction_type: str | None,
+    account_ids: str | None,
+    categories: str | None,
+    min_amount: float | None,
+    max_amount: float | None,
+    merchant: str | None,
+    page: int | None,
+    page_size: int,
 ) -> None:
-    """List bank transactions within a date range.
+    """List bank transactions with rich filtering.
 
-    Defaults to last 7 days. Supports filtering by categories and pagination.
+    Defaults to the last 7 days. Supports sorting, account/category/merchant
+    filters, amount ranges, and pagination.
 
     Returns JSON: {"count": int, "accounts": [...], "transactions": [...]}
     """
@@ -193,7 +216,18 @@ def transactions_cmd(
 
     _run(
         lambda c: c.get_transactions_v2(
-            from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
+            from_date=from_date,
+            to_date=to_date,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            transaction_type=transaction_type,
+            account_ids=account_ids,
+            categories=categories,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            merchant=merchant,
+            page=page,
+            page_size=page_size,
         ),
         table_columns=["posted_at", "description", "amount", "type"],
         table_title=f"Transactions ({from_date} to {effective_to})",
