@@ -23,6 +23,14 @@ class APIError(Exception):
         super().__init__(message)
 
 
+class NetworkError(Exception):
+    """Raised when the HTTP client cannot reach the server (connection/timeout)."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
 class TruvClient:
     def __init__(self) -> None:
         self._server_url = get_server_url()
@@ -60,25 +68,33 @@ class TruvClient:
 
         raise AuthRequired
 
-    def _request(self, method: str, path: str, **kwargs: object) -> dict:
-        """Make an authenticated API request with auto-retry on 401."""
+    def _do_request(self, method: str, path: str, token: str, **kwargs: object) -> httpx.Response:
+        """Single HTTP call. Catches connectivity errors and raises NetworkError."""
+        try:
+            return self._client.request(
+                method,
+                path,
+                headers={"Authorization": f"Bearer {token}"},
+                **kwargs,
+            )
+        except httpx.RequestError as e:
+            raise NetworkError(str(e) or e.__class__.__name__) from e
+
+    def _request(self, method: str, path: str, *, raw: bool = False, **kwargs: object) -> dict | list | bytes | None:
+        """Authenticated API request with auto-retry on 401.
+
+        Returns:
+            - None for 204 No Content
+            - bytes for non-JSON bodies (e.g. text/csv) or when raw=True
+            - parsed JSON otherwise
+        """
         token = self._get_access_token()
-        resp = self._client.request(
-            method,
-            path,
-            headers={"Authorization": f"Bearer {token}"},
-            **kwargs,
-        )
+        resp = self._do_request(method, path, token, **kwargs)
 
         if resp.status_code == 401:
             new_token = refresh_tokens(self._server_url)
             if new_token:
-                resp = self._client.request(
-                    method,
-                    path,
-                    headers={"Authorization": f"Bearer {new_token}"},
-                    **kwargs,
-                )
+                resp = self._do_request(method, path, new_token, **kwargs)
 
         if resp.status_code == 401:
             raise AuthRequired
@@ -93,6 +109,13 @@ class TruvClient:
             except Exception:
                 pass
             raise APIError(resp.status_code, error, message)
+
+        if resp.status_code == 204 or not resp.content:
+            return None
+
+        content_type = resp.headers.get("content-type", "").lower()
+        if raw or not content_type.startswith("application/json"):
+            return resp.content
 
         return resp.json()
 

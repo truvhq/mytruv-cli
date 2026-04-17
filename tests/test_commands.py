@@ -38,14 +38,14 @@ def _mock_client_error(method: str, error: Exception) -> MagicMock:
 def test_auth_status_not_authenticated(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["auth", "status"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["authenticated"] is False
 
 
 def test_auth_logout_when_not_authenticated(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["auth", "logout", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["status"] == "logged_out"
 
 
@@ -72,7 +72,7 @@ def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["total_accounts"] == 2
     assert data["aggregated_balances"][0]["type"] == "CHECKING"
 
@@ -97,7 +97,7 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["count"] == 1
     assert data["transactions"][0]["description"] == "Coffee"
 
@@ -128,7 +128,7 @@ def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["spending", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["summary"]["total_spending"] == "1500.00"
 
 
@@ -151,7 +151,7 @@ def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["income", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["employments"][0]["company"]["name"] == "Acme"
 
 
@@ -178,7 +178,7 @@ def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["recurring", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["recurring_transactions"]["outflows"][0]["source_name"] == "Netflix"
 
 
@@ -198,7 +198,7 @@ def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balance-history", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["time_series"][0]["net_worth"] == "40000.00"
 
 
@@ -219,7 +219,7 @@ def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["user", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["email"] == "jane@example.com"
 
 
@@ -243,7 +243,7 @@ def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["links", "--agent"])
     assert result.exit_code == 0
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["results"][0]["provider"]["name"] == "Chase"
 
 
@@ -258,7 +258,7 @@ def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 2
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["error"] == "auth_required"
 
 
@@ -270,6 +270,6 @@ def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balances", "--agent"])
     assert result.exit_code == 1
-    data = json.loads(result.output)
+    data = json.loads(result.stdout)
     assert data["error"] == "not_found"
     assert data["message"] == "No data found"

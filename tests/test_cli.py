@@ -17,7 +17,26 @@ def test_help(runner: CliRunner) -> None:
 def test_version(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert "0.2.0" in result.output
+
+
+def test_alias_tx_resolves_to_transactions(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["tx", "--help"])
+    assert result.exit_code == 0
+    assert "transactions" in result.output.lower()
+
+
+def test_alias_bal_resolves_to_balances(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["bal", "--help"])
+    assert result.exit_code == 0
+    assert "balances" in result.output.lower()
+
+
+def test_alias_in_did_you_mean(runner: CliRunner) -> None:
+    result = runner.invoke(cli, ["txs"])
+    assert result.exit_code != 0
+    assert "Did you mean" in result.output
+    assert "tx" in result.output or "transactions" in result.output
 
 
 def test_unknown_command_suggests(runner: CliRunner) -> None:

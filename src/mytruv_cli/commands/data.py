@@ -2,15 +2,19 @@ from collections.abc import Callable
 
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
+from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
-    agent_option,
-    is_interactive,
+    OutputFormat,
     output_auth_error,
+    output_csv,
+    output_csv_unsupported,
     output_error,
     output_info,
     output_json,
+    output_network_error,
+    output_option,
     output_table,
+    resolved_format,
 )
 
 
@@ -33,15 +37,17 @@ def _fmt_pct(val: str | None) -> str:
 
 
 def _fetch(fetch_fn: Callable[[TruvClient], dict]) -> dict:
-    """Create client, call fetch_fn, handle auth/API errors. Returns data or exits."""
+    """Create client, call fetch_fn, handle auth/network/API errors. Returns data or exits."""
     try:
         with TruvClient() as client:
             return fetch_fn(client)
     except AuthRequired:
         output_auth_error()
+    except NetworkError as e:
+        output_network_error(e.message)
     except APIError as e:
         output_error(e.error, e.message)
-    return {}  # unreachable — output_error/output_auth_error raise SystemExit
+    return {}  # unreachable — the helpers above raise SystemExit
 
 
 def _run(
@@ -51,26 +57,46 @@ def _run(
     table_title: str | None = None,
     table_key: str | None = None,
     format_row: Callable[[dict], dict] | None = None,
+    csv_columns: list[str] | None = None,
 ) -> None:
-    """Fetch data and output as table (interactive) or JSON (agent/piped)."""
+    """Fetch data and output in the resolved format.
+
+    CSV emits raw (unformatted) row values using `csv_columns`. Commands that
+    can't express their output as one flat table must omit `csv_columns`, which
+    makes --output csv exit with csv_unsupported.
+    """
+    fmt = resolved_format()
+    if fmt == OutputFormat.CSV and csv_columns is None:
+        output_csv_unsupported()
+
     data = _fetch(fetch_fn)
 
-    if is_interactive() and table_columns:
-        rows = data
-        if table_key and isinstance(data, dict):
-            rows = data.get(table_key, [])
-        if isinstance(rows, list):
-            if format_row:
-                rows = [format_row(r) for r in rows]
-            output_table(rows, table_columns, title=table_title)
-        else:
-            output_json(data)
-    else:
+    if fmt == OutputFormat.JSON:
         output_json(data)
+        return
+
+    rows: object = data
+    if table_key and isinstance(data, dict):
+        rows = data.get(table_key, [])
+
+    if fmt == OutputFormat.CSV:
+        if not isinstance(rows, list):
+            output_csv_unsupported()
+        output_csv(rows, csv_columns or [])
+        return
+
+    if not isinstance(rows, list):
+        output_json(data)
+        return
+
+    if format_row:
+        rows = [format_row(r) for r in rows]
+
+    output_table(rows, table_columns or [], title=table_title)
 
 
 @click.command("balances")
-@agent_option
+@output_option
 def balances_cmd() -> None:
     """Show aggregated balances across all accounts.
 
@@ -91,11 +117,12 @@ def balances_cmd() -> None:
             "available": _fmt_dollar(r.get("available_balance")),
             "accounts": r.get("account_count", ""),
         },
+        csv_columns=["type", "currency_code", "balance", "available_balance", "account_count"],
     )
 
 
 @click.command("liabilities")
-@agent_option
+@output_option
 def liabilities_cmd() -> None:
     """Show aggregated liabilities across all accounts.
 
@@ -103,22 +130,27 @@ def liabilities_cmd() -> None:
 
     Returns JSON: {"accounts": [...], "liabilities": {"credit": [...], "loans": [...]}}
     """
+    fmt = resolved_format()
+    if fmt == OutputFormat.CSV:
+        output_csv_unsupported()
+
     data = _fetch(lambda c: c.get_liabilities())
 
-    if is_interactive():
-        accounts = data.get("accounts", [])
-        if accounts:
-            rows = [
-                {
-                    "account": f"{a.get('type', '')} ···{a.get('mask', '')}",
-                    "balance": _fmt_dollar((a.get("balances") or {}).get("balance")),
-                    "available": _fmt_dollar((a.get("balances") or {}).get("available_balance")),
-                }
-                for a in accounts
-            ]
-            output_table(rows, ["account", "balance", "available"], title="Liabilities")
-        else:
-            output_json(data)
+    if fmt == OutputFormat.JSON:
+        output_json(data)
+        return
+
+    accounts = data.get("accounts", [])
+    rows = [
+        {
+            "account": f"{a.get('type', '')} ···{a.get('mask', '')}",
+            "balance": _fmt_dollar((a.get("balances") or {}).get("balance")),
+            "available": _fmt_dollar((a.get("balances") or {}).get("available_balance")),
+        }
+        for a in accounts
+    ]
+    if rows:
+        output_table(rows, ["account", "balance", "available"], title="Liabilities")
     else:
         output_json(data)
 
@@ -143,7 +175,7 @@ def liabilities_cmd() -> None:
 )
 @click.option("--page", type=int, default=None, help="Page number (1-based). Omit to fetch all.")
 @click.option("--page-size", type=int, default=500, help="Results per page (10-500). Default: 500.")
-@agent_option
+@output_option
 def transactions_cmd(
     from_date: str | None, to_date: str | None, categories: str | None, page: int | None, page_size: int
 ) -> None:
@@ -167,6 +199,7 @@ def transactions_cmd(
         table_title=f"Transactions ({from_date} to {effective_to})",
         table_key="transactions",
         format_row=lambda r: {**r, "amount": _fmt_dollar(r.get("amount"))},
+        csv_columns=["posted_at", "description", "amount", "type", "category"],
     )
 
 
@@ -186,7 +219,7 @@ def transactions_cmd(
 @click.option("--days", type=int, default=30, help="Number of days to analyze. Default: 30.")
 @click.option("--start-date", default=None, help="Start date (YYYY-MM-DD). Overrides --days.")
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
-@agent_option
+@output_option
 def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | None, end_date: str | None) -> None:
     """Analyze spending by category, merchant, or period.
 
@@ -211,53 +244,58 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
 
     effective_end = end_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
+    fmt = resolved_format()
+    if fmt == OutputFormat.CSV:
+        output_csv_unsupported()
+
     data = _fetch(lambda c: c.get_spending(**params))
 
-    if is_interactive():
-        summary = data.get("summary", {})
-        period_label = f"{params['start_date']} to {effective_end}"
-        output_table(
-            [
-                {
-                    "total": _fmt_dollar(summary.get("total_spending")),
-                    "daily_avg": _fmt_dollar(summary.get("average_daily_spending")),
-                    "monthly_avg": _fmt_dollar(summary.get("average_monthly_spending")),
-                    "transactions": summary.get("total_transactions", ""),
-                }
-            ],
-            ["total", "daily_avg", "monthly_avg", "transactions"],
-            title=f"Spending Summary ({period_label})",
-        )
-        spending = data.get("spending", {})
-        if spending.get("by_category"):
-            items, name_fn = spending["by_category"], lambda i: i.get("category", "")
-        elif spending.get("by_merchant"):
-            items, name_fn = spending["by_merchant"], lambda i: i.get("merchant_name", "")
-        elif spending.get("by_time_period"):
-            items, name_fn = (
-                spending["by_time_period"],
-                lambda i: f"{i.get('start_date', '')} → {i.get('end_date', '')}",
-            )
-        else:
-            items = None
-        if items:
-            rows = [
-                {
-                    "name": name_fn(item),
-                    "amount": _fmt_dollar(item.get("total_amount", item.get("amount"))),
-                    "transactions": item.get("transaction_count", ""),
-                    "share": _fmt_pct(item.get("percentage_of_total", item.get("percentage"))),
-                }
-                for item in items[:10]
-            ]
-            output_table(rows, ["name", "amount", "transactions", "share"], title="Breakdown")
-    else:
+    if fmt == OutputFormat.JSON:
         output_json(data)
+        return
+
+    summary = data.get("summary", {})
+    period_label = f"{params['start_date']} to {effective_end}"
+    output_table(
+        [
+            {
+                "total": _fmt_dollar(summary.get("total_spending")),
+                "daily_avg": _fmt_dollar(summary.get("average_daily_spending")),
+                "monthly_avg": _fmt_dollar(summary.get("average_monthly_spending")),
+                "transactions": summary.get("total_transactions", ""),
+            }
+        ],
+        ["total", "daily_avg", "monthly_avg", "transactions"],
+        title=f"Spending Summary ({period_label})",
+    )
+    spending = data.get("spending", {})
+    if spending.get("by_category"):
+        items, name_fn = spending["by_category"], lambda i: i.get("category", "")
+    elif spending.get("by_merchant"):
+        items, name_fn = spending["by_merchant"], lambda i: i.get("merchant_name", "")
+    elif spending.get("by_time_period"):
+        items, name_fn = (
+            spending["by_time_period"],
+            lambda i: f"{i.get('start_date', '')} → {i.get('end_date', '')}",
+        )
+    else:
+        items = None
+    if items:
+        rows = [
+            {
+                "name": name_fn(item),
+                "amount": _fmt_dollar(item.get("total_amount", item.get("amount"))),
+                "transactions": item.get("transaction_count", ""),
+                "share": _fmt_pct(item.get("percentage_of_total", item.get("percentage"))),
+            }
+            for item in items[:10]
+        ]
+        output_table(rows, ["name", "amount", "transactions", "share"], title="Breakdown")
 
 
 @click.command("income")
 @click.option("--days", type=int, default=90, help="Number of days to include (1-365). Default: 90.")
-@agent_option
+@output_option
 def income_cmd(days: int) -> None:
     """Show income report from payroll and bank sources.
 
@@ -267,38 +305,43 @@ def income_cmd(days: int) -> None:
 
     Returns JSON: {"employments": [...]}
     """
+    fmt = resolved_format()
+    if fmt == OutputFormat.CSV:
+        output_csv_unsupported()
+
     data = _fetch(lambda c: c.get_income(days=days))
 
-    if is_interactive():
-        employments = data.get("employments", [])
-        if not employments:
-            output_json(data)
-            return
-        for emp in employments:
-            employer = emp.get("company", {}).get("name", "Unknown")
-            source = emp.get("data_source", "")
-            income_val = _fmt_dollar(emp.get("income"))
-            pay_freq = emp.get("pay_frequency", "")
-            output_info(f"\n[bold]{employer}[/bold]  ({source})")
-            if income_val or pay_freq:
-                output_info(f"  Income: {income_val}  Frequency: {pay_freq}")
-            stmts = emp.get("statements", [])[:5]
-            if stmts:
-                rows = [
-                    {
-                        "pay_date": s.get("pay_date", ""),
-                        "gross_pay": _fmt_dollar(s.get("gross_pay")),
-                        "net_pay": _fmt_dollar(s.get("net_pay")),
-                    }
-                    for s in stmts
-                ]
-                output_table(rows, ["pay_date", "gross_pay", "net_pay"])
-    else:
+    if fmt == OutputFormat.JSON:
         output_json(data)
+        return
+
+    employments = data.get("employments", [])
+    if not employments:
+        output_json(data)
+        return
+    for emp in employments:
+        employer = emp.get("company", {}).get("name", "Unknown")
+        source = emp.get("data_source", "")
+        income_val = _fmt_dollar(emp.get("income"))
+        pay_freq = emp.get("pay_frequency", "")
+        output_info(f"\n[bold]{employer}[/bold]  ({source})")
+        if income_val or pay_freq:
+            output_info(f"  Income: {income_val}  Frequency: {pay_freq}")
+        stmts = emp.get("statements", [])[:5]
+        if stmts:
+            rows = [
+                {
+                    "pay_date": s.get("pay_date", ""),
+                    "gross_pay": _fmt_dollar(s.get("gross_pay")),
+                    "net_pay": _fmt_dollar(s.get("net_pay")),
+                }
+                for s in stmts
+            ]
+            output_table(rows, ["pay_date", "gross_pay", "net_pay"])
 
 
 @click.command("recurring")
-@agent_option
+@output_option
 def recurring_cmd() -> None:
     """Detect recurring transactions (subscriptions, etc.).
 
@@ -307,39 +350,44 @@ def recurring_cmd() -> None:
 
     Returns JSON: {"recurring_transactions": {"outflows": [...], "inflows": [...]}}
     """
+    fmt = resolved_format()
+    if fmt == OutputFormat.CSV:
+        output_csv_unsupported()
+
     data = _fetch(lambda c: c.get_recurring())
 
-    if is_interactive():
-        rt = data.get("recurring_transactions", data)
-        outflows = rt.get("outflows", [])
-        inflows = rt.get("inflows", [])
-        if outflows:
-            rows = [
-                {
-                    "name": o.get("source_name", ""),
-                    "amount": _fmt_dollar(o.get("average_amount")),
-                    "status": o.get("status", ""),
-                    "last": o.get("last_transaction_date", ""),
-                    "next": o.get("next_expected_date", ""),
-                }
-                for o in outflows
-            ]
-            output_table(rows, ["name", "amount", "status", "last", "next"], title="Recurring Expenses")
-        if inflows:
-            rows = [
-                {
-                    "name": i.get("source_name", ""),
-                    "amount": _fmt_dollar(i.get("average_amount")),
-                    "status": i.get("status", ""),
-                    "last": i.get("last_transaction_date", ""),
-                    "next": i.get("next_expected_date", ""),
-                }
-                for i in inflows
-            ]
-            output_table(rows, ["name", "amount", "status", "last", "next"], title="Recurring Income")
-        if not outflows and not inflows:
-            output_json(data)
-    else:
+    if fmt == OutputFormat.JSON:
+        output_json(data)
+        return
+
+    rt = data.get("recurring_transactions", data)
+    outflows = rt.get("outflows", [])
+    inflows = rt.get("inflows", [])
+    if outflows:
+        rows = [
+            {
+                "name": o.get("source_name", ""),
+                "amount": _fmt_dollar(o.get("average_amount")),
+                "status": o.get("status", ""),
+                "last": o.get("last_transaction_date", ""),
+                "next": o.get("next_expected_date", ""),
+            }
+            for o in outflows
+        ]
+        output_table(rows, ["name", "amount", "status", "last", "next"], title="Recurring Expenses")
+    if inflows:
+        rows = [
+            {
+                "name": i.get("source_name", ""),
+                "amount": _fmt_dollar(i.get("average_amount")),
+                "status": i.get("status", ""),
+                "last": i.get("last_transaction_date", ""),
+                "next": i.get("next_expected_date", ""),
+            }
+            for i in inflows
+        ]
+        output_table(rows, ["name", "amount", "status", "last", "next"], title="Recurring Income")
+    if not outflows and not inflows:
         output_json(data)
 
 
@@ -356,7 +404,7 @@ def recurring_cmd() -> None:
     type=click.Choice(["day", "week", "month"], case_sensitive=False),
     help="Aggregation period. Default: week.",
 )
-@agent_option
+@output_option
 def balance_history_cmd(date_range: str, time_period: str) -> None:
     """Show balance trends over time (assets, net worth).
 
@@ -376,4 +424,5 @@ def balance_history_cmd(date_range: str, time_period: str) -> None:
             "liabilities": _fmt_dollar(r.get("liabilities")),
             "net_worth": _fmt_dollar(r.get("net_worth")),
         },
+        csv_columns=["date", "assets", "liabilities", "net_worth"],
     )

@@ -2,6 +2,7 @@ import difflib
 
 import click
 
+from mytruv_cli import __version__
 from mytruv_cli.commands.auth import auth_group
 from mytruv_cli.commands.data import (
     balance_history_cmd,
@@ -15,12 +16,23 @@ from mytruv_cli.commands.data import (
 from mytruv_cli.commands.links import links_cmd
 from mytruv_cli.commands.user import user_cmd
 
+_BUILTIN_ALIASES: dict[str, str] = {
+    "tx": "transactions",
+    "bal": "balances",
+    "hist": "balance-history",
+    "rec": "recurring",
+}
+
 
 class _AliasGroup(click.Group):
     def resolve_command(self, ctx: click.Context, args: list[str]) -> tuple:
+        if args and args[0] in _BUILTIN_ALIASES:
+            args = [_BUILTIN_ALIASES[args[0]], *args[1:]]
+
         cmd_name = args[0] if args else None
         if cmd_name and cmd_name not in self.commands:
-            matches = difflib.get_close_matches(cmd_name, self.commands.keys(), n=3, cutoff=0.5)
+            candidates = list(self.commands.keys()) + list(_BUILTIN_ALIASES.keys())
+            matches = difflib.get_close_matches(cmd_name, candidates, n=3, cutoff=0.5)
             if matches:
                 hint = ", ".join(f"'{m}'" for m in matches)
                 self.fail(f"Unknown command '{cmd_name}'. Did you mean: {hint}?", ctx=ctx)
@@ -35,13 +47,13 @@ class _AliasGroup(click.Group):
 
 
 @click.group(cls=_AliasGroup, context_settings={"max_content_width": 120})
-@click.version_option(package_name="mytruv")
+@click.version_option(version=__version__, prog_name="mytruv")
 def cli() -> None:
     """mytruv — Access your financial data from the command line.
 
     Authenticate with your MyTruv account and query balances, transactions,
-    income, spending, and more. Output is JSON when piped or with --agent,
-    and tables when run in an interactive terminal.
+    income, spending, and more. Output is a table when in a TTY and JSON
+    when piped; override with --output table|json|csv (or the --json shorthand).
 
     \b
     Get started:
@@ -50,9 +62,7 @@ def cli() -> None:
         mytruv transactions --from 2025-01-01
 
     \b
-    Agent mode (always JSON on stdout, exit code > 0 on error):
-        mytruv balances --agent
-        mytruv transactions --from 2025-01-01 --agent
+    Aliases: tx=transactions, bal=balances, hist=balance-history, rec=recurring
     """
 
 

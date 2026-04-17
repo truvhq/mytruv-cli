@@ -1,9 +1,13 @@
 [project]
 name = "mytruv"
-version = "0.1.0"
+version = "0.2.0"
 description = "CLI for accessing your MyTruv financial data"
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
+authors = [
+    { name = "Truv", email = "support@truv.com" },
+]
 dependencies = [
     "click>=8.1",
     "httpx>=0.25",
@@ -21,6 +25,11 @@ dev = [
 
 [project.scripts]
 mytruv = "mytruv_cli.main:cli"
+
+[project.urls]
+Homepage = "https://mytruv.com"
+Repository = "https://github.com/truv/mytruv-cli"
+Issues = "https://github.com/truv/mytruv-cli/issues"
 
 [build-system]
 requires = ["hatchling"]
