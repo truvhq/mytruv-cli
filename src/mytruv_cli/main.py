@@ -14,6 +14,7 @@ from mytruv_cli.commands.data import (
     transactions_cmd,
 )
 from mytruv_cli.commands.links import links_cmd
+from mytruv_cli.commands.subscription import subscription_cmd
 from mytruv_cli.commands.user import user_cmd
 
 _BUILTIN_ALIASES: dict[str, str] = {
@@ -21,6 +22,7 @@ _BUILTIN_ALIASES: dict[str, str] = {
     "bal": "balances",
     "hist": "balance-history",
     "rec": "recurring",
+    "sub": "subscription",
 }
 
 
@@ -62,7 +64,7 @@ def cli() -> None:
         mytruv transactions --from 2025-01-01
 
     \b
-    Aliases: tx=transactions, bal=balances, hist=balance-history, rec=recurring
+    Aliases: tx=transactions, bal=balances, hist=balance-history, rec=recurring, sub=subscription
     """
 
 
@@ -76,3 +78,4 @@ cli.add_command(spending_cmd)
 cli.add_command(income_cmd)
 cli.add_command(recurring_cmd)
 cli.add_command(balance_history_cmd)
+cli.add_command(subscription_cmd)

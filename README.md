@@ -72,6 +72,7 @@ mytruv auth logout
 | `mytruv income` | Income report from payroll and bank sources (`--days`, `--top`) |
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (`--date-range`, `--time-period`) |
+| `mytruv subscription` | Show the active subscription, if any |
 
 ### Global Options
 
@@ -100,6 +101,7 @@ CSV output emits raw (unformatted) values and is supported on single-table comma
 | `bal` | `balances` |
 | `hist` | `balance-history` |
 | `rec` | `recurring` |
+| `sub` | `subscription` |
 
 ## Agent / Automation Usage
 
