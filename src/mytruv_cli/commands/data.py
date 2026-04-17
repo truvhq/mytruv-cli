@@ -185,7 +185,7 @@ def transactions_cmd(
 )
 @click.option(
     "--days",
-    type=int,
+    type=click.IntRange(min=1),
     default=None,
     help="Number of days to analyze. Default: 30, or 180 when --group-by time_period (to span multiple periods).",
 )
