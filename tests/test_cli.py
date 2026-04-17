@@ -51,19 +51,19 @@ def test_all_commands_registered() -> None:
 
 
 def test_completion_bash(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["completion", "bash"])
+    result = runner.invoke(cli, ["completion", "bash"], prog_name="mytruv")
     assert result.exit_code == 0
     assert "mytruv" in result.output
 
 
 def test_completion_zsh(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["completion", "zsh"])
+    result = runner.invoke(cli, ["completion", "zsh"], prog_name="mytruv")
     assert result.exit_code == 0
     assert "mytruv" in result.output
 
 
 def test_completion_fish(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["completion", "fish"])
+    result = runner.invoke(cli, ["completion", "fish"], prog_name="mytruv")
     assert result.exit_code == 0
     assert "mytruv" in result.output
 
