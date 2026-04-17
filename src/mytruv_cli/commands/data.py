@@ -37,7 +37,7 @@ def _fmt_pct(val: str | None) -> str:
         return str(val)
 
 
-def _fetch(fetch_fn: Callable[[TruvClient], object]) -> object:
+def _fetch(fetch_fn: Callable[[TruvClient], dict]) -> dict:
     """Create client, call fetch_fn, handle auth/network/API errors. Returns data or exits."""
     try:
         with TruvClient() as client:
@@ -49,6 +49,20 @@ def _fetch(fetch_fn: Callable[[TruvClient], object]) -> object:
     except APIError as e:
         output_error(e.error, e.message)
     return {}  # unreachable — the helpers above raise SystemExit
+
+
+def _fetch_bytes(fetch_fn: Callable[[TruvClient], bytes]) -> bytes:
+    """Same as _fetch but typed for endpoints that return raw bytes (e.g. CSV export)."""
+    try:
+        with TruvClient() as client:
+            return fetch_fn(client)
+    except AuthRequired:
+        output_auth_error()
+    except NetworkError as e:
+        output_network_error(e.message)
+    except APIError as e:
+        output_error(e.error, e.message)
+    return b""  # unreachable — the helpers above raise SystemExit
 
 
 def _run(
@@ -216,7 +230,7 @@ def transactions_cmd(
     effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
     if resolved_format() == OutputFormat.CSV:
-        content = _fetch(
+        content = _fetch_bytes(
             lambda c: c.export_transactions_csv(
                 from_date=from_date,
                 to_date=to_date,

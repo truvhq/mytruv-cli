@@ -67,11 +67,11 @@ mytruv auth logout
 | `mytruv links` | List connected bank accounts and payroll providers |
 | `mytruv balances` | Aggregated balances by account type |
 | `mytruv liabilities` | Aggregated liabilities (credit cards, loans) |
-| `mytruv transactions` | Bank transactions, last 7 days (supports `--from`, `--to`, `--categories`, `--page`) |
-| `mytruv spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`) |
-| `mytruv income` | Income report from payroll and bank sources (supports `--days`) |
+| `mytruv transactions` | Bank transactions with filters (`--from`, `--to`, `--sort`, `--order`, `--type`, `--account`, `--categories`, `--min-amount`, `--max-amount`, `--merchant`, `--page`, `--page-size`). `--output csv` streams from the server-side export endpoint. |
+| `mytruv spending` | Spending analysis (`--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`, `--top`) |
+| `mytruv income` | Income report from payroll and bank sources (`--days`, `--top`) |
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
-| `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
+| `mytruv balance-history` | Balance trends over time (`--date-range`, `--time-period`) |
 
 ### Global Options
 
