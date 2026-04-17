@@ -4,7 +4,7 @@ from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
 from mytruv_cli.auth.store import clear_auth, is_authenticated
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
-from mytruv_cli.output.formatter import agent_option, output_error, output_json, output_success
+from mytruv_cli.output.formatter import agent_option, is_no_input, output_error, output_json, output_success
 
 
 @click.group("auth")
@@ -31,7 +31,7 @@ def login_cmd(no_browser: bool) -> None:
     server_url = get_server_url()
 
     try:
-        login(server_url, no_browser=no_browser)
+        login(server_url, no_browser=no_browser or is_no_input())
     except OAuthError as e:
         output_error(e.error, e.message)
 

@@ -73,12 +73,44 @@ mytruv auth logout
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
 
+### Shell Completion
+
+| Command | Description |
+|---|---|
+| `mytruv completion bash` | Print bash completion script |
+| `mytruv completion zsh` | Print zsh completion script |
+| `mytruv completion fish` | Print fish completion script |
+
+Add completion to your shell config:
+
+```bash
+# bash — add to ~/.bashrc
+source <(mytruv completion bash)
+
+# zsh — add to ~/.zshrc
+source <(mytruv completion zsh)
+
+# fish — add to ~/.config/fish/config.fish
+mytruv completion fish | source
+```
+
 ### Global Options
 
 | Option | Description |
 |---|---|
+| `--no-input` | Disable interactive prompts (for CI/scripts). Implies `--agent` and `--no-browser` on login. |
 | `--version` | Show version |
 | `--help` | Show help |
+
+## Configuration
+
+Config file: `~/.config/mytruv/config.toml`
+
+```toml
+# Always output JSON (same as passing --agent to every command)
+[preferences]
+agent_mode = true
+```
 
 ## Environment Variables
 
@@ -86,6 +118,7 @@ mytruv auth logout
 |---|---|
 | `MYTRUV_SERVER_URL` | Override the API server URL (default: `https://api.mytruv.com`). Useful for pointing at staging or a local dev server without editing the config file. |
 | `MYTRUV_CONFIG_DIR` | Override the config directory (default: `~/.config/mytruv`). |
+| `NO_COLOR` | Disable all color output. |
 
 ## Agent / Automation Usage
 

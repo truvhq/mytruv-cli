@@ -10,11 +10,21 @@ from mytruv_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
 
 _console = Console(stderr=True)
 _force_agent: bool = False
+_no_input: bool = False
 
 
 def set_agent_mode(enabled: bool) -> None:
     global _force_agent  # noqa: PLW0603
     _force_agent = enabled
+
+
+def set_no_input(enabled: bool) -> None:
+    global _no_input  # noqa: PLW0603
+    _no_input = enabled
+
+
+def is_no_input() -> bool:
+    return _no_input
 
 
 def is_interactive() -> bool:

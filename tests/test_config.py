@@ -8,6 +8,7 @@ from mytruv_cli.config.settings import (
     clear_tokens,
     config_path,
     get_client_credentials,
+    get_default_agent_mode,
     get_server_url,
     get_tokens,
     set_client_credentials,
@@ -85,3 +86,18 @@ def test_server_url_env_var_overrides_config(tmp_path, monkeypatch) -> None:
 def test_server_url_whitespace_env_var_ignored(monkeypatch) -> None:
     monkeypatch.setenv("MYTRUV_SERVER_URL", "   ")
     assert get_server_url() == "https://api.mytruv.com"
+
+
+def test_get_default_agent_mode_false() -> None:
+    assert get_default_agent_mode() is False
+
+
+def test_get_default_agent_mode_true() -> None:
+    import tomli_w
+
+    cfg_path = config_path()
+    cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cfg_path, "wb") as f:
+        tomli_w.dump({"preferences": {"agent_mode": True}}, f)
+
+    assert get_default_agent_mode() is True

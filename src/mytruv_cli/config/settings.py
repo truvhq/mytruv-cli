@@ -104,3 +104,8 @@ def get_server_url() -> str:
         return url
     cfg = load_config()
     return cfg.get("server_url", DEFAULT_SERVER_URL)
+
+
+def get_default_agent_mode() -> bool:
+    cfg = load_config()
+    return bool(cfg.get("preferences", {}).get("agent_mode", False))
