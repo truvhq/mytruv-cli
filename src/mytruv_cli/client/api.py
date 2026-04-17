@@ -181,3 +181,97 @@ class TruvClient:
 
     def get_link_report(self, link_id: str) -> dict:
         return self._request("GET", f"/v1/links/{link_id}/report")
+
+    # ── V2 financial data ──
+
+    def get_balances_v2(self) -> dict:
+        return self._request("GET", "/v2/links/balances")
+
+    def get_liabilities_v2(self) -> dict:
+        return self._request("GET", "/v2/links/liabilities")
+
+    def get_transactions_v2(
+        self,
+        *,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        sort_by: str = "date",
+        sort_order: str = "desc",
+        transaction_type: str | None = None,
+        account_ids: str | None = None,
+        categories: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        merchant: str | None = None,
+        page: int | None = None,
+        page_size: int = 500,
+    ) -> dict:
+        params: dict[str, str | int | float] = {
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+            "page_size": page_size,
+        }
+        if from_date:
+            params["transacted_at_from"] = from_date
+        if to_date:
+            params["transacted_at_to"] = to_date
+        if transaction_type:
+            params["transaction_type"] = transaction_type
+        if account_ids:
+            params["account_ids"] = account_ids
+        if categories:
+            params["categories"] = categories
+        if min_amount is not None:
+            params["min_amount"] = min_amount
+        if max_amount is not None:
+            params["max_amount"] = max_amount
+        if merchant:
+            params["merchant"] = merchant
+        if page is not None:
+            params["page"] = page
+        return self._request("GET", "/v2/users/transactions", params=params)
+
+    def export_transactions_csv(
+        self,
+        *,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        transaction_type: str | None = None,
+        account_ids: str | None = None,
+        categories: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        merchant: str | None = None,
+    ) -> bytes:
+        params: dict[str, str | float] = {}
+        if from_date:
+            params["transacted_at_from"] = from_date
+        if to_date:
+            params["transacted_at_to"] = to_date
+        if transaction_type:
+            params["transaction_type"] = transaction_type
+        if account_ids:
+            params["account_ids"] = account_ids
+        if categories:
+            params["categories"] = categories
+        if min_amount is not None:
+            params["min_amount"] = min_amount
+        if max_amount is not None:
+            params["max_amount"] = max_amount
+        if merchant:
+            params["merchant"] = merchant
+        result = self._request("GET", "/v2/users/transactions/export", params=params, raw=True)
+        return result if isinstance(result, bytes) else b""
+
+    def get_spending_v2(self, **params: object) -> dict:
+        return self._request("GET", "/v2/users/spending", params=params)
+
+    def get_recurring_v2(self) -> dict:
+        return self._request("GET", "/v2/users/recurring-transactions")
+
+    def get_balance_history_v2(self, *, date_range: str = "3M", time_period: str = "week") -> dict:
+        return self._request(
+            "GET",
+            "/v2/users/balance-history",
+            params={"date_range": date_range, "time_period": time_period},
+        )

@@ -88,3 +88,43 @@ def test_request_raises_api_error_on_4xx() -> None:
     assert exc.value.status_code == 404
     assert exc.value.error == "not_found"
     assert exc.value.message == "Nope"
+
+
+def test_export_transactions_csv_returns_bytes() -> None:
+    client = _client_with_token()
+    csv_body = b"posted_at,description,amount\n2025-01-01,Coffee,-5.00\n"
+    resp = _make_response(200, content=csv_body, content_type="text/csv; charset=utf-8")
+    with patch.object(client._client, "request", return_value=resp) as mock_req:
+        result = client.export_transactions_csv(from_date="2025-01-01", categories="Food")
+    assert result == csv_body
+    _, kwargs = mock_req.call_args
+    assert kwargs["params"]["transacted_at_from"] == "2025-01-01"
+    assert kwargs["params"]["categories"] == "Food"
+
+
+def test_get_transactions_v2_builds_filter_params() -> None:
+    client = _client_with_token()
+    resp = _make_response(
+        200,
+        json_body={"count": 0, "transactions": []},
+        content=b"{}",
+        content_type="application/json",
+    )
+    with patch.object(client._client, "request", return_value=resp) as mock_req:
+        client.get_transactions_v2(
+            from_date="2025-01-01",
+            sort_by="amount",
+            sort_order="asc",
+            transaction_type="debit",
+            min_amount=10.0,
+            max_amount=500.0,
+            merchant="Starbucks",
+        )
+    _, kwargs = mock_req.call_args
+    params = kwargs["params"]
+    assert params["sort_by"] == "amount"
+    assert params["sort_order"] == "asc"
+    assert params["transaction_type"] == "debit"
+    assert params["min_amount"] == 10.0
+    assert params["max_amount"] == 500.0
+    assert params["merchant"] == "Starbucks"
