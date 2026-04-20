@@ -44,7 +44,7 @@ def test_auth_status_not_authenticated(runner: CliRunner) -> None:
 
 
 def test_auth_logout_when_not_authenticated(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["auth", "logout", "--agent"])
+    result = runner.invoke(cli, ["auth", "logout", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["status"] == "logged_out"
@@ -71,7 +71,7 @@ def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["balances", "--agent"])
+    result = runner.invoke(cli, ["balances", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["total_accounts"] == 2
@@ -96,7 +96,7 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--agent"])
+    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["count"] == 1
@@ -127,7 +127,7 @@ def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["spending", "--agent"])
+    result = runner.invoke(cli, ["spending", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["summary"]["total_spending"] == "1500.00"
@@ -135,7 +135,7 @@ def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 @pytest.mark.parametrize("days_arg", ["0", "-1", "-30"])
 def test_spending_days_invalid(days_arg: str, runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["spending", "--days", days_arg, "--agent"])
+    result = runner.invoke(cli, ["spending", "--days", days_arg, "--json"])
     assert result.exit_code != 0
     assert "invalid" in result.output.lower() or "error" in result.output.lower()
 
@@ -144,7 +144,7 @@ def test_spending_days_invalid(days_arg: str, runner: CliRunner) -> None:
 def test_spending_days_default_time_period(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
-    runner.invoke(cli, ["spending", "--group-by", "time_period", "--agent"])
+    runner.invoke(cli, ["spending", "--group-by", "time_period", "--json"])
     call_kwargs = mock.get_spending.call_args.kwargs
     expected = (datetime.now(tz=UTC) - timedelta(days=180)).strftime("%Y-%m-%d")
     assert call_kwargs["start_date"] == expected
@@ -154,7 +154,7 @@ def test_spending_days_default_time_period(mock_cls: MagicMock, runner: CliRunne
 def test_spending_days_default_other_group_by(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
-    runner.invoke(cli, ["spending", "--group-by", "category", "--agent"])
+    runner.invoke(cli, ["spending", "--group-by", "category", "--json"])
     call_kwargs = mock.get_spending.call_args.kwargs
     expected = (datetime.now(tz=UTC) - timedelta(days=30)).strftime("%Y-%m-%d")
     assert call_kwargs["start_date"] == expected
@@ -164,7 +164,7 @@ def test_spending_days_default_other_group_by(mock_cls: MagicMock, runner: CliRu
 def test_spending_days_explicit_overrides_time_period_default(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
-    runner.invoke(cli, ["spending", "--group-by", "time_period", "--days", "30", "--agent"])
+    runner.invoke(cli, ["spending", "--group-by", "time_period", "--days", "30", "--json"])
     call_kwargs = mock.get_spending.call_args.kwargs
     expected = (datetime.now(tz=UTC) - timedelta(days=30)).strftime("%Y-%m-%d")
     assert call_kwargs["start_date"] == expected
@@ -187,7 +187,7 @@ def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["income", "--agent"])
+    result = runner.invoke(cli, ["income", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["employments"][0]["company"]["name"] == "Acme"
@@ -214,7 +214,7 @@ def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["recurring", "--agent"])
+    result = runner.invoke(cli, ["recurring", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["recurring_transactions"]["outflows"][0]["source_name"] == "Netflix"
@@ -234,7 +234,7 @@ def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["balance-history", "--agent"])
+    result = runner.invoke(cli, ["balance-history", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["time_series"][0]["net_worth"] == "40000.00"
@@ -255,7 +255,7 @@ def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["user", "--agent"])
+    result = runner.invoke(cli, ["user", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["email"] == "jane@example.com"
@@ -279,7 +279,7 @@ def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
         },
     )
 
-    result = runner.invoke(cli, ["links", "--agent"])
+    result = runner.invoke(cli, ["links", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["results"][0]["provider"]["name"] == "Chase"
@@ -294,7 +294,7 @@ def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     mock_cls.return_value = _mock_client_error("get_balances", AuthRequired())
 
-    result = runner.invoke(cli, ["balances", "--agent"])
+    result = runner.invoke(cli, ["balances", "--json"])
     assert result.exit_code == 2
     data = json.loads(result.output)
     assert data["error"] == "auth_required"
@@ -306,7 +306,7 @@ def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     mock_cls.return_value = _mock_client_error("get_balances", APIError(404, "not_found", "No data found"))
 
-    result = runner.invoke(cli, ["balances", "--agent"])
+    result = runner.invoke(cli, ["balances", "--json"])
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["error"] == "not_found"
