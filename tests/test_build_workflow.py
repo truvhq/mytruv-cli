@@ -73,7 +73,11 @@ class TestWorkflowBuildMatrix:
         """darwin/amd64 must run on an Intel (x86_64) macOS runner, not ARM."""
         matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
         entry = next(m for m in matrix if m["platform"] == "darwin" and m["arch"] == "amd64")
-        assert "macos-13" in entry["os"], f"darwin/amd64 must use macos-13 (Intel), not {entry['os']} (ARM)"
+        # Intel macOS labels: `macos-15-intel`, `macos-26-intel`, or `macos-*-large`.
+        # macos-13 was retired in Dec 2025; bare `macos-14`/`macos-15` are ARM.
+        assert "intel" in entry["os"] or "-large" in entry["os"], (
+            f"darwin/amd64 must use an Intel runner (e.g. macos-15-intel), not {entry['os']}"
+        )
 
     def test_linux_arm64_uses_arm_runner(self, workflow):
         """linux/arm64 must run on an ARM runner, not x86_64."""
