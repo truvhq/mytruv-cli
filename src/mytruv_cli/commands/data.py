@@ -114,9 +114,13 @@ def liabilities_cmd() -> None:
         output_json(data)
         return
 
+    columns = ["account", "balance", "available"]
     accounts = data.get("accounts", [])
     if not accounts:
-        output_json(data)
+        if fmt == OutputFormat.CSV:
+            output_csv([], columns)
+        else:
+            output_json(data)
         return
 
     rows = [
@@ -127,7 +131,7 @@ def liabilities_cmd() -> None:
         }
         for a in accounts
     ]
-    output_table(rows, ["account", "balance", "available"], title="Liabilities")
+    output_table(rows, columns, title="Liabilities")
 
 
 @click.command("transactions")
@@ -314,9 +318,13 @@ def income_cmd(days: int) -> None:
         output_json(data)
         return
 
+    csv_columns = ["employer", "source", "pay_date", "gross_pay", "net_pay"]
     employments = data.get("employments", [])
     if not employments:
-        output_json(data)
+        if fmt == OutputFormat.CSV:
+            output_csv([], csv_columns)
+        else:
+            output_json(data)
         return
 
     if fmt == OutputFormat.CSV:
@@ -331,7 +339,7 @@ def income_cmd(days: int) -> None:
             for emp in employments
             for s in emp.get("statements", [])
         ]
-        output_csv(rows, ["employer", "source", "pay_date", "gross_pay", "net_pay"])
+        output_csv(rows, csv_columns)
         return
 
     for emp in employments:
@@ -372,12 +380,16 @@ def recurring_cmd() -> None:
         output_json(data)
         return
 
+    csv_columns = ["direction", "name", "amount", "status", "last", "next"]
     rt = data.get("recurring_transactions", data)
     outflows = rt.get("outflows", [])
     inflows = rt.get("inflows", [])
 
     if not outflows and not inflows:
-        output_json(data)
+        if fmt == OutputFormat.CSV:
+            output_csv([], csv_columns)
+        else:
+            output_json(data)
         return
 
     def _row(item: dict, direction: str) -> dict:
@@ -392,7 +404,7 @@ def recurring_cmd() -> None:
 
     if fmt == OutputFormat.CSV:
         rows = [_row(o, "outflow") for o in outflows] + [_row(i, "inflow") for i in inflows]
-        output_csv(rows, ["direction", "name", "amount", "status", "last", "next"])
+        output_csv(rows, csv_columns)
         return
 
     if outflows:

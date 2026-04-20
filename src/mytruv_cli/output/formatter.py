@@ -96,8 +96,12 @@ def output_option(fn):
         no_color_flag: bool,
         **kwargs,
     ):
-        if no_color_flag:
-            set_no_color(True)
+        # Reset state so earlier invocations (tests, embedded callers) don't leak.
+        global _agent_deprecation_shown  # noqa: PLW0603
+        _agent_deprecation_shown = False
+        set_format(None)
+        set_no_color(no_color_flag)
+
         if output_fmt is not None:
             set_format(OutputFormat(output_fmt.lower()))
         elif json_flag:

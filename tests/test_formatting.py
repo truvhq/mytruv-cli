@@ -3,19 +3,10 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
 from click.testing import CliRunner
 
 from mytruv_cli.commands.data import _fmt_dollar, _fmt_pct
 from mytruv_cli.main import cli
-from mytruv_cli.output import formatter as fmt_mod
-
-
-@pytest.fixture(autouse=True)
-def _reset_formatter_state() -> None:
-    fmt_mod.set_format(None)
-    fmt_mod.set_no_color(False)
-    fmt_mod._agent_deprecation_shown = False  # noqa: SLF001
 
 
 def test_fmt_dollar() -> None:
@@ -117,3 +108,72 @@ def test_output_precedence_over_agent(runner: CliRunner) -> None:
         result = runner.invoke(cli, ["balances", "--output", "csv", "--agent"])
     assert result.exit_code == 0
     assert "type,currency" in result.output
+
+
+def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> None:
+    """Each @output_option invocation must reset module state so earlier flags don't persist."""
+    with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:
+        mock_cls.return_value = _mock_balances_client()
+        # First call sets format=CSV.
+        csv_result = runner.invoke(cli, ["balances", "--output", "csv"])
+        assert csv_result.exit_code == 0
+        assert csv_result.output.startswith("type,currency")
+
+        # Second call has no flags — must fall back to auto-detect (non-TTY → JSON),
+        # not inherit CSV from the prior invocation.
+        default_result = runner.invoke(cli, ["balances"])
+        assert default_result.exit_code == 0
+        json.loads(default_result.output)  # valid JSON, not CSV
+
+
+def test_agent_deprecation_warning_fires_per_invocation(runner: CliRunner) -> None:
+    """The deprecation notice must print on every --agent invocation, not once per process."""
+    with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:
+        mock_cls.return_value = _mock_balances_client()
+        first = runner.invoke(cli, ["balances", "--agent"])
+        second = runner.invoke(cli, ["balances", "--agent"])
+    assert "deprecated" in first.output.lower()
+    assert "deprecated" in second.output.lower()
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_liabilities_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """--output csv on an empty result must still emit CSV (header-only), not fall back to JSON."""
+    mock = MagicMock()
+    mock.get_liabilities.return_value = {"accounts": [], "liabilities": {"credit": [], "loans": []}}
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["liabilities", "--output", "csv"])
+    assert result.exit_code == 0
+    lines = [line for line in result.output.splitlines() if line.strip()]
+    assert lines == ["account,balance,available"]
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_income_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = MagicMock()
+    mock.get_income.return_value = {"employments": []}
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["income", "--output", "csv"])
+    assert result.exit_code == 0
+    lines = [line for line in result.output.splitlines() if line.strip()]
+    assert lines == ["employer,source,pay_date,gross_pay,net_pay"]
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_recurring_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = MagicMock()
+    mock.get_recurring.return_value = {"recurring_transactions": {"outflows": [], "inflows": []}}
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["recurring", "--output", "csv"])
+    assert result.exit_code == 0
+    lines = [line for line in result.output.splitlines() if line.strip()]
+    assert lines == ["direction,name,amount,status,last,next"]
