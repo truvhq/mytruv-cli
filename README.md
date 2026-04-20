@@ -73,6 +73,27 @@ mytruv auth logout
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
 | `mytruv balance-history` | Balance trends over time (supports `--date-range`, `--time-period`) |
 
+### Shell Completion
+
+| Command | Description |
+|---|---|
+| `mytruv completion bash` | Print bash completion script |
+| `mytruv completion zsh` | Print zsh completion script |
+| `mytruv completion fish` | Print fish completion script |
+
+Add to your shell config:
+
+```bash
+# bash (~/.bashrc)
+source <(mytruv completion bash)
+
+# zsh (~/.zshrc)
+source <(mytruv completion zsh)
+
+# fish (~/.config/fish/config.fish)
+mytruv completion fish | source
+```
+
 ### Global Options
 
 | Option | Description |
