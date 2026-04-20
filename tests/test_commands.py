@@ -323,23 +323,16 @@ def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
-def test_transactions_csv_truncation_warning_on_stderr(mock_cls: MagicMock, runner: CliRunner) -> None:
-    """CSV mode must surface truncation on stderr — stdout stays pure CSV so pipelines don't choke."""
-    mock_cls.return_value = _mock_client(
-        "get_transactions",
-        {
-            "count": 10,
-            "transactions": [
-                {"posted_at": "2025-03-01", "description": "Coffee", "amount": "-5.50", "type": "DEBIT"},
-            ],
-        },
-    )
+def test_network_error(mock_cls: MagicMock, runner: CliRunner) -> None:
+    from mytruv_cli.client.api import NetworkError
 
-    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--output", "csv"])
-    assert result.exit_code == 0
-    assert result.stdout.splitlines()[0] == "posted_at,description,amount,type"
-    assert "Warning" in result.stderr
-    assert "Showing 1 of 10" in result.stderr
+    mock_cls.return_value = _mock_client_error("get_balances", NetworkError("Network error: connection refused"))
+
+    result = runner.invoke(cli, ["balances", "--json"])
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["error"] == "network_error"
+    assert "connection refused" in data["message"]
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
@@ -354,3 +347,139 @@ def test_csv_error_keeps_stdout_clean(mock_cls: MagicMock, runner: CliRunner) ->
     assert result.stdout == ""
     data = json.loads(result.stderr)
     assert data["error"] == "server_error"
+
+
+# -- Transactions v2 filters --
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_passes_v2_filters(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_transactions", {"count": 0, "transactions": []})
+    mock_cls.return_value = mock
+
+    result = runner.invoke(
+        cli,
+        [
+            "transactions",
+            "--from",
+            "2026-01-01",
+            "--type",
+            "debit",
+            "--min-amount",
+            "10",
+            "--merchant",
+            "Amazon",
+            "--sort",
+            "amount",
+            "--order",
+            "asc",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    kwargs = mock.get_transactions.call_args.kwargs
+    assert kwargs["transaction_type"] == "debit"
+    assert kwargs["min_amount"] == "10"
+    assert kwargs["merchant"] == "Amazon"
+    assert kwargs["sort_by"] == "amount"
+    assert kwargs["sort_order"] == "asc"
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_csv_streams_server_export(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = MagicMock()
+    mock.export_transactions_csv.return_value = b"date,amount\n2026-01-01,-5.50\n"
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["transactions", "--from", "2026-01-01", "--output", "csv"])
+    assert result.exit_code == 0, result.output
+    assert result.output.startswith("date,amount")
+    mock.export_transactions_csv.assert_called_once()
+    mock.get_transactions.assert_not_called()
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_categories_legacy_alias(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock = _mock_client("get_transactions", {"count": 0, "transactions": []})
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["transactions", "--from", "2026-01-01", "--categories", "Food,Transfer", "--json"])
+    assert result.exit_code == 0, result.output
+    assert mock.get_transactions.call_args.kwargs["categories"] == "Food,Transfer"
+
+
+# -- Subscription --
+
+
+@patch("mytruv_cli.commands.subscription.TruvClient")
+def test_subscription_active(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client(
+        "get_subscription",
+        {
+            "name": "Pro",
+            "price": 999,
+            "currency": "usd",
+            "interval": "month",
+            "is_trial": False,
+            "current_period_end": 1735689600,
+        },
+    )
+
+    result = runner.invoke(cli, ["subscription", "--json"])
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["active"] is True
+    assert data["subscription"]["name"] == "Pro"
+
+
+@patch("mytruv_cli.commands.subscription.TruvClient")
+def test_subscription_inactive(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client("get_subscription", None)
+
+    result = runner.invoke(cli, ["subscription", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["active"] is False
+    assert data["subscription"] is None
+
+
+# -- Insights --
+
+
+@patch("mytruv_cli.commands.insights.TruvClient")
+def test_insights_in_progress_exits_zero(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client("get_insights", {"status": "in_progress", "insights": []})
+
+    result = runner.invoke(cli, ["insights", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["status"] == "in_progress"
+
+
+@patch("mytruv_cli.commands.insights.TruvClient")
+def test_insights_completed(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client(
+        "get_insights",
+        {
+            "status": "completed",
+            "insights": [
+                {
+                    "id": "i1",
+                    "category": "expenses",
+                    "priority": "high",
+                    "title": "Subscription creep",
+                    "summary": "You added three subscriptions this month.",
+                    "detail": "Full detail...",
+                    "follow_up": "Review recurring charges",
+                }
+            ],
+        },
+    )
+
+    result = runner.invoke(cli, ["insights", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["status"] == "completed"
+    assert data["insights"][0]["title"] == "Subscription creep"

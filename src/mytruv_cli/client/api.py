@@ -23,6 +23,13 @@ class APIError(Exception):
         super().__init__(message)
 
 
+class NetworkError(Exception):
+    """Raised when the API is unreachable (DNS, timeout, connection refused, etc.)."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class TruvClient:
     def __init__(self) -> None:
         self._server_url = get_server_url()
@@ -60,25 +67,26 @@ class TruvClient:
 
         raise AuthRequired
 
-    def _request(self, method: str, path: str, **kwargs: object) -> dict:
-        """Make an authenticated API request with auto-retry on 401."""
+    def _send(self, method: str, path: str, token: str, **kwargs: object) -> httpx.Response:
+        try:
+            return self._client.request(
+                method,
+                path,
+                headers={"Authorization": f"Bearer {token}"},
+                **kwargs,
+            )
+        except httpx.RequestError as e:
+            raise NetworkError(f"Network error: {e}") from e
+
+    def _request(self, method: str, path: str, **kwargs: object) -> dict | bytes:
+        """Make an authenticated API request. Returns JSON dict or raw bytes for CSV."""
         token = self._get_access_token()
-        resp = self._client.request(
-            method,
-            path,
-            headers={"Authorization": f"Bearer {token}"},
-            **kwargs,
-        )
+        resp = self._send(method, path, token, **kwargs)
 
         if resp.status_code == 401:
             new_token = refresh_tokens(self._server_url)
             if new_token:
-                resp = self._client.request(
-                    method,
-                    path,
-                    headers={"Authorization": f"Bearer {new_token}"},
-                    **kwargs,
-                )
+                resp = self._send(method, path, new_token, **kwargs)
 
         if resp.status_code == 401:
             raise AuthRequired
@@ -94,6 +102,9 @@ class TruvClient:
                 pass
             raise APIError(resp.status_code, error, message)
 
+        content_type = resp.headers.get("content-type", "").lower()
+        if content_type.startswith("text/csv"):
+            return resp.content
         return resp.json()
 
     # ── User ──
@@ -106,13 +117,13 @@ class TruvClient:
     def get_links(self) -> dict:
         return self._request("GET", "/v1/links")
 
-    # ── Financial data ──
+    # ── Financial data (v2) ──
 
     def get_balances(self) -> dict:
-        return self._request("GET", "/v1/links/balances")
+        return self._request("GET", "/v2/links/balances")
 
     def get_liabilities(self) -> dict:
-        return self._request("GET", "/v1/links/liabilities")
+        return self._request("GET", "/v2/links/liabilities")
 
     def get_transactions(
         self,
@@ -120,29 +131,86 @@ class TruvClient:
         from_date: str,
         to_date: str | None = None,
         categories: str | None = None,
+        transaction_type: str | None = None,
+        account_ids: str | None = None,
+        min_amount: str | None = None,
+        max_amount: str | None = None,
+        merchant: str | None = None,
+        sort_by: str = "date",
+        sort_order: str = "desc",
         page: int | None = None,
         page_size: int = 500,
     ) -> dict:
         params: dict[str, str | int] = {
             "transacted_at_from": from_date,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
             "page_size": page_size,
         }
         if to_date:
             params["transacted_at_to"] = to_date
         if categories:
             params["categories"] = categories
+        if transaction_type:
+            params["transaction_type"] = transaction_type.upper()
+        if account_ids:
+            params["account_ids"] = account_ids
+        if min_amount is not None:
+            params["min_amount"] = min_amount
+        if max_amount is not None:
+            params["max_amount"] = max_amount
+        if merchant:
+            params["merchant"] = merchant
         if page is not None:
             params["page"] = page
-        return self._request("GET", "/v1/users/transactions", params=params)
+        return self._request("GET", "/v2/users/transactions", params=params)
+
+    def export_transactions_csv(
+        self,
+        *,
+        from_date: str,
+        to_date: str | None = None,
+        categories: str | None = None,
+        transaction_type: str | None = None,
+        account_ids: str | None = None,
+        min_amount: str | None = None,
+        max_amount: str | None = None,
+        merchant: str | None = None,
+        sort_by: str = "date",
+        sort_order: str = "desc",
+    ) -> bytes:
+        params: dict[str, str] = {
+            "transacted_at_from": from_date,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+        }
+        if to_date:
+            params["transacted_at_to"] = to_date
+        if categories:
+            params["categories"] = categories
+        if transaction_type:
+            params["transaction_type"] = transaction_type.upper()
+        if account_ids:
+            params["account_ids"] = account_ids
+        if min_amount is not None:
+            params["min_amount"] = min_amount
+        if max_amount is not None:
+            params["max_amount"] = max_amount
+        if merchant:
+            params["merchant"] = merchant
+        return self._request("GET", "/v2/users/transactions/export", params=params)
 
     def get_spending(self, **params: object) -> dict:
-        return self._request("GET", "/v1/users/spending", params=params)
+        return self._request("GET", "/v2/users/spending", params=params)
 
     def get_income(self, *, days: int = 90) -> dict:
+        # Income endpoint has no v2 counterpart; stay on v1.
         return self._request("GET", "/v1/users/income", params={"days": days})
 
-    def get_recurring(self) -> dict:
-        return self._request("GET", "/v1/users/recurring-transactions")
+    def get_recurring(self, *, status: str = "active") -> dict:
+        return self._request("GET", "/v2/users/recurring-transactions", params={"status": status})
+
+    _DATE_RANGE_MAP = {"1M": "1_month", "3M": "3_months", "6M": "6_months", "1Y": "1_year", "ALL": "all"}
 
     def get_balance_history(
         self,
@@ -152,9 +220,24 @@ class TruvClient:
     ) -> dict:
         return self._request(
             "GET",
-            "/v1/users/balance-history",
-            params={"date_range": date_range, "time_period": time_period},
+            "/v2/users/balance-history",
+            params={
+                "date_range": self._DATE_RANGE_MAP.get(date_range.upper(), date_range),
+                "time_period": time_period,
+            },
         )
 
     def get_link_report(self, link_id: str) -> dict:
         return self._request("GET", f"/v1/links/{link_id}/report")
+
+    def get_subscription(self) -> dict | None:
+        """Returns the active subscription, or None if the user has no active subscription (404)."""
+        try:
+            return self._request("GET", "/v1/billing/subscriptions/active")
+        except APIError as e:
+            if e.status_code == 404:
+                return None
+            raise
+
+    def get_insights(self) -> dict:
+        return self._request("GET", "/v2/user/insights")
