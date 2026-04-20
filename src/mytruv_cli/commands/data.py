@@ -1,8 +1,9 @@
+import sys
 from collections.abc import Callable
 
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
+from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
     OutputFormat,
     current_format,
@@ -34,13 +35,15 @@ def _fmt_pct(val: str | None) -> str:
         return str(val)
 
 
-def _fetch(fetch_fn: Callable[[TruvClient], dict]) -> dict:
-    """Create client, call fetch_fn, handle auth/API errors. Returns data or exits."""
+def _fetch(fetch_fn: Callable[[TruvClient], object]) -> object:
+    """Create client, call fetch_fn, handle auth/API/network errors. Returns data or exits."""
     try:
         with TruvClient() as client:
             return fetch_fn(client)
     except AuthRequired:
         output_auth_error()
+    except NetworkError as e:
+        output_error("network_error", str(e))
     except APIError as e:
         output_error(e.error, e.message)
     return {}  # unreachable — output_error/output_auth_error raise SystemExit
@@ -131,32 +134,63 @@ def liabilities_cmd() -> None:
 
 
 @click.command("transactions")
+@click.option("--from", "from_date", default=None, help="Start date (YYYY-MM-DD). Defaults to 7 days ago.")
+@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
 @click.option(
-    "--from",
-    "from_date",
+    "--category",
+    "category",
     default=None,
-    help="Start date (YYYY-MM-DD). Defaults to 7 days ago.",
+    help="Comma-separated category filter. Example: 'Food & Dining,Transfer'",
+)
+@click.option("--categories", "categories_legacy", default=None, hidden=True, help="Deprecated: use --category.")
+@click.option(
+    "--type",
+    "transaction_type",
+    type=click.Choice(["debit", "credit"], case_sensitive=False),
+    default=None,
+    help="Filter by transaction direction.",
+)
+@click.option("--account", "account_ids", default=None, help="Comma-separated account IDs.")
+@click.option("--min-amount", default=None, help="Minimum absolute amount (inclusive).")
+@click.option("--max-amount", default=None, help="Maximum absolute amount (inclusive).")
+@click.option("--merchant", default=None, help="Case-insensitive merchant name match.")
+@click.option(
+    "--sort",
+    "sort_by",
+    type=click.Choice(["date", "amount"], case_sensitive=False),
+    default="date",
+    help="Sort field. Default: date.",
 )
 @click.option(
-    "--to",
-    "to_date",
-    default=None,
-    help="End date (YYYY-MM-DD). Defaults to today.",
-)
-@click.option(
-    "--categories",
-    default=None,
-    help="Comma-separated category filter. Example: 'Income,Transfer'",
+    "--order",
+    "sort_order",
+    type=click.Choice(["asc", "desc"], case_sensitive=False),
+    default="desc",
+    help="Sort order. Default: desc.",
 )
 @click.option("--page", type=int, default=None, help="Page number (1-based). Omit to fetch all.")
 @click.option("--page-size", type=int, default=500, help="Results per page (10-500). Default: 500.")
 @output_option
 def transactions_cmd(
-    from_date: str | None, to_date: str | None, categories: str | None, page: int | None, page_size: int
+    from_date: str | None,
+    to_date: str | None,
+    category: str | None,
+    categories_legacy: str | None,
+    transaction_type: str | None,
+    account_ids: str | None,
+    min_amount: str | None,
+    max_amount: str | None,
+    merchant: str | None,
+    sort_by: str,
+    sort_order: str,
+    page: int | None,
+    page_size: int,
 ) -> None:
     """List bank transactions within a date range.
 
-    Defaults to last 7 days. Supports filtering by categories and pagination.
+    Defaults to last 7 days. Supports filtering by category, type, account, amount,
+    and merchant; sortable by date or amount. Pass --output csv to stream a
+    server-side CSV export (up to 10,000 rows).
 
     Returns JSON: {"count": int, "accounts": [...], "transactions": [...]}
     """
@@ -166,16 +200,35 @@ def transactions_cmd(
         from_date = (datetime.now(tz=UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
     effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
-    data = _fetch(
-        lambda c: c.get_transactions(
-            from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
-        )
-    )
+    if categories_legacy and not category:
+        category = categories_legacy
+        output_info("[yellow]Warning:[/yellow] --categories is deprecated; use --category.")
+
+    filters = {
+        "from_date": from_date,
+        "to_date": to_date,
+        "categories": category,
+        "transaction_type": transaction_type,
+        "account_ids": account_ids,
+        "min_amount": min_amount,
+        "max_amount": max_amount,
+        "merchant": merchant,
+        "sort_by": sort_by,
+        "sort_order": sort_order,
+    }
+
+    fmt = current_format()
+
+    if fmt == OutputFormat.CSV:
+        csv_bytes = _fetch(lambda c: c.export_transactions_csv(**filters))
+        sys.stdout.buffer.write(csv_bytes)
+        return
+
+    data = _fetch(lambda c: c.get_transactions(**filters, page=page, page_size=page_size))
 
     transactions = data.get("transactions", [])
     total_count = data.get("count", len(transactions))
     truncated = total_count > len(transactions)
-    fmt = current_format()
 
     if fmt == OutputFormat.JSON:
         if truncated:
@@ -183,10 +236,10 @@ def transactions_cmd(
         output_json(data)
         return
 
-    if truncated and page is None and fmt == OutputFormat.TABLE:
+    if truncated and page is None:
         output_info(
             f"[yellow]Warning:[/yellow] Showing {len(transactions)} of {total_count} transactions. "
-            f"Use --page and --page-size to paginate."
+            f"Use --page and --page-size to paginate, or --output csv to export all."
         )
     rows = [{**r, "amount": _fmt_dollar(r.get("amount"))} for r in transactions]
     output_table(

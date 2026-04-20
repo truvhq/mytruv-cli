@@ -13,7 +13,9 @@ from mytruv_cli.commands.data import (
     spending_cmd,
     transactions_cmd,
 )
+from mytruv_cli.commands.insights import insights_cmd
 from mytruv_cli.commands.links import links_cmd
+from mytruv_cli.commands.subscription import subscription_cmd
 from mytruv_cli.commands.user import user_cmd
 
 
@@ -85,4 +87,6 @@ cli.add_command(spending_cmd)
 cli.add_command(income_cmd)
 cli.add_command(recurring_cmd)
 cli.add_command(balance_history_cmd)
+cli.add_command(subscription_cmd)
+cli.add_command(insights_cmd)
 cli.add_command(completion_cmd)
