@@ -30,6 +30,45 @@ class NetworkError(Exception):
         super().__init__(message)
 
 
+_DATE_RANGE_MAP = {"1M": "1_month", "3M": "3_months", "6M": "6_months", "1Y": "1_year", "ALL": "all"}
+
+
+def _build_transactions_params(
+    *,
+    from_date: str,
+    to_date: str | None,
+    categories: str | None,
+    transaction_type: str | None,
+    account_ids: str | None,
+    min_amount: str | None,
+    max_amount: str | None,
+    merchant: str | None,
+    sort_by: str,
+    sort_order: str,
+) -> dict[str, str | int]:
+    """Shared query-param builder for /v2/users/transactions and its /export sibling."""
+    params: dict[str, str | int] = {
+        "transacted_at_from": from_date,
+        "sort_by": sort_by,
+        "sort_order": sort_order,
+    }
+    if to_date:
+        params["transacted_at_to"] = to_date
+    if categories:
+        params["categories"] = categories
+    if transaction_type:
+        params["transaction_type"] = transaction_type.upper()
+    if account_ids:
+        params["account_ids"] = account_ids
+    if min_amount is not None:
+        params["min_amount"] = min_amount
+    if max_amount is not None:
+        params["max_amount"] = max_amount
+    if merchant:
+        params["merchant"] = merchant
+    return params
+
+
 class TruvClient:
     def __init__(self) -> None:
         self._server_url = get_server_url()
@@ -141,26 +180,19 @@ class TruvClient:
         page: int | None = None,
         page_size: int = 500,
     ) -> dict:
-        params: dict[str, str | int] = {
-            "transacted_at_from": from_date,
-            "sort_by": sort_by,
-            "sort_order": sort_order,
-            "page_size": page_size,
-        }
-        if to_date:
-            params["transacted_at_to"] = to_date
-        if categories:
-            params["categories"] = categories
-        if transaction_type:
-            params["transaction_type"] = transaction_type.upper()
-        if account_ids:
-            params["account_ids"] = account_ids
-        if min_amount is not None:
-            params["min_amount"] = min_amount
-        if max_amount is not None:
-            params["max_amount"] = max_amount
-        if merchant:
-            params["merchant"] = merchant
+        params = _build_transactions_params(
+            from_date=from_date,
+            to_date=to_date,
+            categories=categories,
+            transaction_type=transaction_type,
+            account_ids=account_ids,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            merchant=merchant,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+        params["page_size"] = page_size
         if page is not None:
             params["page"] = page
         return self._request("GET", "/v2/users/transactions", params=params)
@@ -179,25 +211,18 @@ class TruvClient:
         sort_by: str = "date",
         sort_order: str = "desc",
     ) -> bytes:
-        params: dict[str, str] = {
-            "transacted_at_from": from_date,
-            "sort_by": sort_by,
-            "sort_order": sort_order,
-        }
-        if to_date:
-            params["transacted_at_to"] = to_date
-        if categories:
-            params["categories"] = categories
-        if transaction_type:
-            params["transaction_type"] = transaction_type.upper()
-        if account_ids:
-            params["account_ids"] = account_ids
-        if min_amount is not None:
-            params["min_amount"] = min_amount
-        if max_amount is not None:
-            params["max_amount"] = max_amount
-        if merchant:
-            params["merchant"] = merchant
+        params = _build_transactions_params(
+            from_date=from_date,
+            to_date=to_date,
+            categories=categories,
+            transaction_type=transaction_type,
+            account_ids=account_ids,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            merchant=merchant,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
         return self._request("GET", "/v2/users/transactions/export", params=params)
 
     def get_spending(self, **params: object) -> dict:
@@ -210,8 +235,6 @@ class TruvClient:
     def get_recurring(self, *, status: str = "active") -> dict:
         return self._request("GET", "/v2/users/recurring-transactions", params={"status": status})
 
-    _DATE_RANGE_MAP = {"1M": "1_month", "3M": "3_months", "6M": "6_months", "1Y": "1_year", "ALL": "all"}
-
     def get_balance_history(
         self,
         *,
@@ -222,7 +245,7 @@ class TruvClient:
             "GET",
             "/v2/users/balance-history",
             params={
-                "date_range": self._DATE_RANGE_MAP.get(date_range.upper(), date_range),
+                "date_range": _DATE_RANGE_MAP.get(date_range.upper(), date_range),
                 "time_period": time_period,
             },
         )

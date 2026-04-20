@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import click
 
 from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
@@ -23,8 +25,6 @@ def _fmt_price(cents: int | None, currency: str | None) -> str:
 def _fmt_period(ts: int | None) -> str:
     if not ts:
         return ""
-    from datetime import UTC, datetime
-
     return datetime.fromtimestamp(ts, tz=UTC).strftime("%Y-%m-%d")
 
 
