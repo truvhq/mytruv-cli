@@ -3,6 +3,7 @@ import difflib
 import click
 from click.shell_completion import BashComplete, FishComplete, ZshComplete
 
+from mytruv_cli import __version__
 from mytruv_cli.commands.auth import auth_group
 from mytruv_cli.commands.data import (
     balance_history_cmd,
@@ -36,7 +37,7 @@ class _AliasGroup(click.Group):
 
 
 @click.group(cls=_AliasGroup, context_settings={"max_content_width": 120, "help_option_names": ["-h", "--help"]})
-@click.version_option(package_name="mytruv")
+@click.version_option(version=__version__, package_name="mytruv")
 def cli() -> None:
     """mytruv — Access your financial data from the command line.
 
@@ -86,3 +87,7 @@ cli.add_command(income_cmd)
 cli.add_command(recurring_cmd)
 cli.add_command(balance_history_cmd)
 cli.add_command(completion_cmd)
+
+
+if __name__ == "__main__":
+    cli()
