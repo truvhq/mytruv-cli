@@ -64,10 +64,10 @@ def completion_cmd(ctx: click.Context, shell: str) -> None:
     """Print shell completion script for SHELL.
 
     \b
-    Setup (add to your shell config):
-        bash:  source <(mytruv completion bash)
-        zsh:   source <(mytruv completion zsh)
-        fish:  mytruv completion fish | source
+    Quick install:
+        bash:  echo 'source <(mytruv completion bash)' >> ~/.bashrc
+        zsh:   echo 'source <(mytruv completion zsh)' >> ~/.zshrc
+        fish:  mytruv completion fish > ~/.config/fish/completions/mytruv.fish
     """
     prog = ctx.find_root().info_name
     complete_var = f"_{prog.upper().replace('-', '_')}_COMPLETE"
