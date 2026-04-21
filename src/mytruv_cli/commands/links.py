@@ -1,6 +1,6 @@
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
+from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
     OutputFormat,
     current_format,
@@ -8,25 +8,20 @@ from mytruv_cli.output.formatter import (
     output_error,
     output_json,
     output_option,
+    output_success,
     output_table,
 )
 
 
-@click.command("links")
-@output_option
-def links_cmd() -> None:
-    """List connected financial accounts.
-
-    Shows all linked bank accounts and payroll providers with their
-    connection status and data source type.
-
-    Returns JSON: {"links": [...], "count": int}
-    """
+def _list_links() -> None:
     try:
         with TruvClient() as client:
             data = client.get_links()
     except AuthRequired:
         output_auth_error()
+        return
+    except NetworkError as e:
+        output_error("network_error", str(e))
         return
     except APIError as e:
         output_error(e.error, e.message)
@@ -47,3 +42,73 @@ def links_cmd() -> None:
         for link in links
     ]
     output_table(rows, ["link_id", "provider", "status", "data_source"], title="Connected Accounts")
+
+
+@click.group("links", invoke_without_command=True)
+@output_option
+@click.pass_context
+def links_cmd(ctx: click.Context) -> None:
+    """List connected financial accounts, or manage them via subcommands.
+
+    Running ``mytruv links`` with no subcommand lists all connections.
+    Subcommands: ``disconnect``, ``report``.
+    """
+    if ctx.invoked_subcommand is None:
+        _list_links()
+
+
+@links_cmd.command("disconnect")
+@click.argument("link_id")
+@click.option("--yes", "-y", "skip_confirm", is_flag=True, help="Skip confirmation prompt.")
+@output_option
+def disconnect_cmd(link_id: str, skip_confirm: bool) -> None:
+    """Permanently remove a link and all its associated data."""
+    if not skip_confirm:
+        click.confirm(
+            f"This will permanently disconnect link {link_id} and remove all its data. Continue?",
+            abort=True,
+            err=True,
+        )
+
+    try:
+        with TruvClient() as client:
+            client.delete_link(link_id)
+    except AuthRequired:
+        output_auth_error()
+        return
+    except NetworkError as e:
+        output_error("network_error", str(e))
+        return
+    except APIError as e:
+        output_error(e.error, e.message)
+        return
+
+    if current_format() == OutputFormat.TABLE:
+        output_success(f"Disconnected {link_id}.")
+    else:
+        output_json({"link_id": link_id, "disconnected": True})
+
+
+@links_cmd.command("report")
+@click.argument("link_id")
+@output_option
+def report_cmd(link_id: str) -> None:
+    """Show the payroll income report for a link.
+
+    The report payload is nested and non-tabular; always rendered as JSON
+    on stdout regardless of --output.
+    """
+    try:
+        with TruvClient() as client:
+            data = client.get_link_report(link_id)
+    except AuthRequired:
+        output_auth_error()
+        return
+    except NetworkError as e:
+        output_error("network_error", str(e))
+        return
+    except APIError as e:
+        output_error(e.error, e.message)
+        return
+
+    output_json(data)
