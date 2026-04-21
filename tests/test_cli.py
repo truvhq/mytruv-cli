@@ -48,6 +48,7 @@ def test_all_commands_registered() -> None:
         "balance-history",
         "subscription",
         "insights",
+        "refresh",
         "completion",
     }
     assert expected == set(cli.commands.keys())
