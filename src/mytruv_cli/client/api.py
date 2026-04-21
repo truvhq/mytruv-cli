@@ -267,3 +267,13 @@ class TruvClient:
 
     def get_insights(self) -> dict:
         return self._request("GET", "/v2/user/insights")
+
+    # ── Write operations ──
+
+    def delete_link(self, link_id: str) -> dict:
+        return self._request("DELETE", f"/v1/links/{link_id}")
+
+    def refresh_data(self, link_ids: list[str] | None = None) -> dict:
+        """Trigger a refresh of connected links. Empty/None link_ids refreshes all eligible."""
+        json_body = {"link_ids": link_ids} if link_ids else None
+        return self._request("POST", "/v1/refresh", json=json_body)
