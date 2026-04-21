@@ -141,6 +141,9 @@ class TruvClient:
                 pass
             raise APIError(resp.status_code, error, message)
 
+        if resp.status_code == 204:
+            return {}
+
         content_type = resp.headers.get("content-type", "").lower()
         if content_type.startswith("text/csv"):
             return resp.content
