@@ -461,3 +461,93 @@ def test_insights_completed(mock_cls: MagicMock, runner: CliRunner) -> None:
     data = json.loads(result.output)
     assert data["status"] == "completed"
     assert data["insights"][0]["title"] == "Subscription creep"
+
+
+# -- Write commands (PR 4) --
+
+
+@patch("mytruv_cli.commands.refresh.TruvClient")
+def test_refresh_all_links_sends_no_body(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client(
+        "refresh_data",
+        {"refreshed_links": [{"link_id": "L1", "task_id": "T1", "provider_name": "Chase"}], "skipped_count": 2},
+    )
+
+    result = runner.invoke(cli, ["refresh", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["skipped_count"] == 2
+    mock_cls.return_value.refresh_data.assert_called_once_with(None)
+
+
+@patch("mytruv_cli.commands.refresh.TruvClient")
+def test_refresh_with_link_ids_sends_list(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client(
+        "refresh_data",
+        {"refreshed_links": [], "skipped_count": 0},
+    )
+
+    result = runner.invoke(cli, ["refresh", "--link-id", "L1", "--link-id", "L2", "--json"])
+    assert result.exit_code == 0
+    mock_cls.return_value.refresh_data.assert_called_once_with(["L1", "L2"])
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_disconnect_requires_confirmation(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Without --yes, declining the prompt aborts and never calls delete_link."""
+    mock_cls.return_value = _mock_client("delete_link", {})
+
+    result = runner.invoke(cli, ["links", "disconnect", "L1"], input="n\n")
+    assert result.exit_code != 0
+    mock_cls.return_value.delete_link.assert_not_called()
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_disconnect_yes_skips_prompt(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_client("delete_link", {})
+
+    result = runner.invoke(cli, ["links", "disconnect", "L1", "--yes", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data == {"link_id": "L1", "disconnected": True}
+    mock_cls.return_value.delete_link.assert_called_once_with("L1")
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_disconnect_handles_204(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Backend passthrough may return {} on 204; should not traceback."""
+    mock_cls.return_value = _mock_client("delete_link", {})
+
+    result = runner.invoke(cli, ["links", "disconnect", "L1", "--yes", "--json"])
+    assert result.exit_code == 0
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_links_report_always_json(mock_cls: MagicMock, runner: CliRunner) -> None:
+    report_body = {"link_id": "L1", "accounts": [{"id": "A1", "balance": "100.00"}]}
+    mock_cls.return_value = _mock_client("get_link_report", report_body)
+
+    # Even without --json on a non-TTY test runner, we want the raw JSON body.
+    result = runner.invoke(cli, ["links", "report", "L1"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data == report_body
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_bare_links_still_lists(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Group promotion must not break `mytruv links` as a plain list command."""
+    mock_cls.return_value = _mock_client(
+        "get_links",
+        {
+            "results": [
+                {"id": "L1", "provider": {"name": "Chase"}, "status": "done", "data_source": "financial_accounts"}
+            ]
+        },
+    )
+
+    result = runner.invoke(cli, ["links", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["results"][0]["id"] == "L1"
+    mock_cls.return_value.get_links.assert_called_once()
