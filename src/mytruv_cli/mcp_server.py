@@ -11,6 +11,9 @@ from mytruv_cli.config.settings import get_server_url
 mcp = FastMCP("MyTruv")
 
 _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
+_AUTH_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
+)
 
 
 def _call(fn_name: str, **kwargs: object) -> dict:
@@ -25,7 +28,7 @@ def _call(fn_name: str, **kwargs: object) -> dict:
         return {"error": e.error, "message": str(e)}
 
 
-@mcp.tool()
+@mcp.tool(annotations=_AUTH_ANNOTATIONS)
 def authenticate() -> dict:
     """Log in to MyTruv by opening the browser for OAuth authentication.
 
