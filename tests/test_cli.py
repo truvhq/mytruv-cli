@@ -1,5 +1,6 @@
 """Tests for the CLI entry point, help text, and command routing."""
 
+import pytest
 from click.testing import CliRunner
 
 from mytruv_cli.main import cli
@@ -46,8 +47,23 @@ def test_all_commands_registered() -> None:
         "recurring",
         "balance-history",
         "mcp",
+        "completion",
     }
     assert expected == set(cli.commands.keys())
+
+
+@pytest.mark.parametrize(
+    ("shell", "marker"),
+    [
+        ("bash", "complete -o nosort -F"),
+        ("zsh", "#compdef mytruv"),
+        ("fish", "complete --no-files --command mytruv"),
+    ],
+)
+def test_completion_emits_shell_script(runner: CliRunner, shell: str, marker: str) -> None:
+    result = runner.invoke(cli, ["completion", shell], prog_name="mytruv")
+    assert result.exit_code == 0
+    assert marker in result.output
 
 
 def test_auth_subcommands() -> None:

@@ -44,9 +44,18 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
-        _CallbackHandler.error = params.get("error", [None])[0]
+        code = params.get("code", [None])[0]
+        error = params.get("error", [None])[0]
+
+        if not code and not error:
+            # Ignore browser-initiated noise (favicon, preflight, etc.)
+            self.send_response(204)
+            self.end_headers()
+            return
+
+        _CallbackHandler.error = error
         _CallbackHandler.error_description = params.get("error_description", [None])[0]
-        _CallbackHandler.code = params.get("code", [None])[0]
+        _CallbackHandler.code = code
         _CallbackHandler.state = params.get("state", [None])[0]
         _CallbackHandler.received.set()
 
@@ -104,6 +113,7 @@ def _start_callback_server() -> tuple[http.server.HTTPServer, int]:
     for port in [CALLBACK_PORT, 0]:
         try:
             server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+            server.timeout = 0.5
             actual_port = server.server_address[1]
             return server, actual_port
         except OSError:
@@ -172,7 +182,11 @@ def login(server_url: str, *, no_browser: bool = False) -> dict:
         f"&scope=openid%20profile%20email"
     )
 
-    thread = threading.Thread(target=server.handle_request, daemon=True)
+    def _serve_until_received() -> None:
+        while not _CallbackHandler.received.is_set():
+            server.handle_request()
+
+    thread = threading.Thread(target=_serve_until_received, daemon=True)
     thread.start()
 
     if no_browser:

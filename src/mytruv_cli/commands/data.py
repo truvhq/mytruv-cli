@@ -159,15 +159,32 @@ def transactions_cmd(
         from_date = (datetime.now(tz=UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
     effective_to = to_date or datetime.now(tz=UTC).strftime("%Y-%m-%d")
 
-    _run(
+    data = _fetch(
         lambda c: c.get_transactions(
             from_date=from_date, to_date=to_date, categories=categories, page=page, page_size=page_size
-        ),
-        table_columns=["posted_at", "description", "amount", "type"],
-        table_title=f"Transactions ({from_date} to {effective_to})",
-        table_key="transactions",
-        format_row=lambda r: {**r, "amount": _fmt_dollar(r.get("amount"))},
+        )
     )
+
+    transactions = data.get("transactions", [])
+    total_count = data.get("count", len(transactions))
+    truncated = total_count > len(transactions)
+
+    if is_interactive():
+        if truncated and page is None:
+            output_info(
+                f"[yellow]Warning:[/yellow] Showing {len(transactions)} of {total_count} transactions. "
+                f"Use --page and --page-size to paginate."
+            )
+        rows = [{**r, "amount": _fmt_dollar(r.get("amount"))} for r in transactions]
+        output_table(
+            rows,
+            ["posted_at", "description", "amount", "type"],
+            title=f"Transactions ({from_date} to {effective_to})",
+        )
+    else:
+        if truncated:
+            data["truncated"] = True
+        output_json(data)
 
 
 @click.command("spending")
@@ -183,11 +200,18 @@ def transactions_cmd(
     type=click.Choice(["day", "week", "month"], case_sensitive=False),
     help="Time period for aggregation. Default: month.",
 )
-@click.option("--days", type=int, default=30, help="Number of days to analyze. Default: 30.")
+@click.option(
+    "--days",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Number of days to analyze. Default: 30, or 180 when --group-by time_period (to span multiple periods).",
+)
 @click.option("--start-date", default=None, help="Start date (YYYY-MM-DD). Overrides --days.")
 @click.option("--end-date", default=None, help="End date (YYYY-MM-DD). Defaults to today.")
 @agent_option
-def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | None, end_date: str | None) -> None:
+def spending_cmd(
+    group_by: str, time_period: str, days: int | None, start_date: str | None, end_date: str | None
+) -> None:
     """Analyze spending by category, merchant, or period.
 
     Returns categorized spending breakdown with totals and summaries.
@@ -197,9 +221,8 @@ def spending_cmd(group_by: str, time_period: str, days: int, start_date: str | N
     """
     from datetime import UTC, datetime, timedelta
 
-    # When grouping by time_period with default days, use 90 days so there are multiple buckets
-    if group_by == "time_period" and days == 30 and not start_date:
-        days = 180
+    if days is None:
+        days = 180 if group_by == "time_period" and not start_date else 30
 
     params: dict[str, str] = {"group_by": group_by, "time_period": time_period}
     if start_date:
