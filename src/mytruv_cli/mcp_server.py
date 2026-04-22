@@ -14,9 +14,6 @@ _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWor
 _AUTH_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
 )
-_LOGOUT_ANNOTATIONS = ToolAnnotations(
-    readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False
-)
 
 
 def _call(fn_name: str, **kwargs: object) -> dict:
@@ -48,7 +45,7 @@ def authenticate() -> dict:
         return {"error": e.error, "message": e.message}
 
 
-@mcp.tool(annotations=_LOGOUT_ANNOTATIONS)
+@mcp.tool(annotations=_AUTH_ANNOTATIONS)
 def logout() -> dict:
     """Log out and clear stored MyTruv credentials.
 
