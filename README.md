@@ -146,13 +146,13 @@ mytruv balances > balances.json
 
 ## Gemini CLI Extension
 
-mytruv works as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension:
+mytruv works as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, giving Gemini access to your financial data through the MCP protocol.
+
+Install the `mytruv` CLI first (see [Install](#install)) so it's on your `$PATH`, then:
 
 ```bash
-gemini extensions install path/to/gemini-extension.json
+gemini extensions install https://github.com/truvhq/mytruv-cli
 ```
-
-This gives Gemini access to your financial data through the MCP protocol. You must install the CLI first so that `mytruv` is available on your `$PATH`.
 
 ## How Authentication Works
 
