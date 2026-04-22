@@ -11,9 +11,7 @@ from mytruv_cli.config.settings import get_server_url
 mcp = FastMCP("MyTruv")
 
 _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
-_AUTH_ANNOTATIONS = ToolAnnotations(
-    readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
-)
+_AUTH_ANNOTATIONS = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
 
 
 def _call(fn_name: str, **kwargs: object) -> dict:
