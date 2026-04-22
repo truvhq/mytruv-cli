@@ -14,20 +14,13 @@ _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWor
 
 
 def _call(fn_name: str, **kwargs: object) -> dict:
-    """Call a TruvClient method, opening a browser for OAuth only if refresh fails."""
+    """Call a TruvClient method and return its result, or an error dict."""
     try:
         with TruvClient() as client:
             method = getattr(client, fn_name)
             return method(**kwargs)
-    except AuthRequired:
-        # No valid tokens and refresh failed — fall back to interactive login, then retry once.
-        try:
-            login(get_server_url())
-            with TruvClient() as client:
-                method = getattr(client, fn_name)
-                return method(**kwargs)
-        except (APIError, OAuthError) as e:
-            return {"error": e.error, "message": str(e)}
+    except AuthRequired as e:
+        return {"error": "auth_required", "message": str(e)}
     except (APIError, OAuthError) as e:
         return {"error": e.error, "message": str(e)}
 
