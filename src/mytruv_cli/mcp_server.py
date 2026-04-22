@@ -13,28 +13,23 @@ mcp = FastMCP("MyTruv")
 _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
 
-def _ensure_auth() -> None:
-    """Auto-login if no valid token exists. Opens browser for OAuth."""
-    if get_valid_token():
-        return
-    login(get_server_url())
-
-
 def _call(fn_name: str, **kwargs: object) -> dict:
-    """Call a TruvClient method, auto-authenticating if needed."""
+    """Call a TruvClient method, opening a browser for OAuth only if refresh fails."""
     try:
-        _ensure_auth()
         with TruvClient() as client:
             method = getattr(client, fn_name)
             return method(**kwargs)
     except AuthRequired:
-        # Token expired between check and call — retry once after re-auth
-        login(get_server_url())
-        with TruvClient() as client:
-            method = getattr(client, fn_name)
-            return method(**kwargs)
+        # No valid tokens and refresh failed — fall back to interactive login, then retry once.
+        try:
+            login(get_server_url())
+            with TruvClient() as client:
+                method = getattr(client, fn_name)
+                return method(**kwargs)
+        except (APIError, OAuthError) as e:
+            return {"error": e.error, "message": str(e)}
     except (APIError, OAuthError) as e:
-        return {"error": getattr(e, "error", "api_error"), "message": str(e)}
+        return {"error": e.error, "message": str(e)}
 
 
 @mcp.tool()
