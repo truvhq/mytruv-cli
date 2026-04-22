@@ -3,8 +3,8 @@
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from mytruv_cli.auth.oauth import OAuthError, login
-from mytruv_cli.auth.store import get_valid_token
+from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
+from mytruv_cli.auth.store import clear_auth, get_valid_token, is_authenticated
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
 
@@ -13,6 +13,9 @@ mcp = FastMCP("MyTruv")
 _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 _AUTH_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False
+)
+_LOGOUT_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False
 )
 
 
@@ -43,6 +46,19 @@ def authenticate() -> dict:
         return {"status": "authenticated"}
     except OAuthError as e:
         return {"error": e.error, "message": e.message}
+
+
+@mcp.tool(annotations=_LOGOUT_ANNOTATIONS)
+def logout() -> dict:
+    """Log out and clear stored MyTruv credentials.
+
+    Revokes tokens server-side (best-effort) and removes local credentials.
+    Safe to call when already logged out.
+    """
+    if is_authenticated():
+        revoke_token(get_server_url())
+    clear_auth()
+    return {"status": "logged_out"}
 
 
 @mcp.tool(annotations=_ANNOTATIONS)
