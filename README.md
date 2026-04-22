@@ -94,6 +94,12 @@ source <(mytruv completion zsh)
 mytruv completion fish | source
 ```
 
+### MCP Server
+
+| Command | Description |
+|---|---|
+| `mytruv mcp` | Start MCP stdio server for AI agent integration |
+
 ### Global Options
 
 | Option | Description |
@@ -156,6 +162,16 @@ mytruv balances
 # Piped: outputs JSON
 mytruv balances | cat
 mytruv balances > balances.json
+```
+
+## Gemini CLI Extension
+
+mytruv works as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, giving Gemini access to your financial data through the MCP protocol.
+
+Install the `mytruv` CLI first (see [Install](#install)) so it's on your `$PATH`, then:
+
+```bash
+gemini extensions install https://github.com/truvhq/mytruv-cli
 ```
 
 ## How Authentication Works
