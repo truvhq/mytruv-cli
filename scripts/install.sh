@@ -84,9 +84,15 @@ main() {
             echo "Run '${BINARY_NAME} --help' to get started."
             ;;
         *)
-            echo "Note: ${INSTALL_DIR} is not on your PATH. Add it, for example:"
-            echo "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.profile"
-            echo "Then run '${BINARY_NAME} --help' to get started."
+            case "$(basename "${SHELL:-/bin/sh}")" in
+                zsh)  rc_file="~/.zshrc" ;;
+                bash) rc_file="~/.bashrc" ;;
+                fish) rc_file="~/.config/fish/config.fish" ;;
+                *)    rc_file="your shell's startup file" ;;
+            esac
+            echo "Note: ${INSTALL_DIR} is not on your PATH. To use ${BINARY_NAME} now, run:"
+            echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
+            echo "To make it persistent, add that line to ${rc_file}."
             ;;
     esac
 }

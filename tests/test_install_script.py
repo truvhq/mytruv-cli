@@ -224,6 +224,20 @@ class TestInstallScriptFlow:
         content = INSTALL_SCRIPT.read_text()
         assert "v[0-9]" in content, "Version string must be validated to match semver-like pattern"
 
+    def test_version_regex_accepts_expected_tags(self):
+        """The version regex must accept stable releases and -rc.N pre-releases, reject malformed tags."""
+        import re
+
+        content = INSTALL_SCRIPT.read_text()
+        m = re.search(r"grep -Eq\s*'(\^[^']+\$)'", content)
+        assert m, "Could not locate version-check regex in install.sh"
+        regex = re.compile(m.group(1))
+
+        for valid in ("v0.1.0", "v1.2.3", "v10.20.30", "v0.1.0-rc.1", "v1.0.0-beta.2", "v2.0.0-alpha"):
+            assert regex.match(valid), f"regex should accept {valid!r}"
+        for invalid in ("v0.1", "1.2.3", "v0.1.0-", "v0.1.0-rc_1", "v0.1.0+build", ""):
+            assert not regex.match(invalid), f"regex should reject {invalid!r}"
+
     def test_tar_extracts_only_expected_binary(self):
         """tar must extract only the expected binary, not all archive entries."""
         content = INSTALL_SCRIPT.read_text()
