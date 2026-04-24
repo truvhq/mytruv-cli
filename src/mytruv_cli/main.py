@@ -42,8 +42,8 @@ def cli() -> None:
     """mytruv — Access your financial data from the command line.
 
     Authenticate with your MyTruv account and query balances, transactions,
-    income, spending, and more. Output is JSON when piped or with --agent,
-    and tables when run in an interactive terminal.
+    income, spending, and more. Output is a table in an interactive terminal,
+    and JSON when piped. Use --output json|csv or --json to force a format.
 
     \b
     Get started:
@@ -52,9 +52,9 @@ def cli() -> None:
         mytruv transactions --from 2025-01-01
 
     \b
-    Agent mode (always JSON on stdout, exit code > 0 on error):
-        mytruv balances --agent
-        mytruv transactions --from 2025-01-01 --agent
+    Scripting (always JSON on stdout, exit code > 0 on error):
+        mytruv balances --json
+        mytruv transactions --from 2025-01-01 --output csv
     """
 
 
@@ -74,6 +74,14 @@ def completion_cmd(ctx: click.Context, shell: str) -> None:
     complete_var = f"_{prog.upper().replace('-', '_')}_COMPLETE"
     classes = {"bash": BashComplete, "zsh": ZshComplete, "fish": FishComplete}
     click.echo(classes[shell](cli, {}, prog, complete_var).source())
+
+
+@cli.command("mcp")
+def mcp_cmd() -> None:
+    """Start MCP stdio server for AI agent integration."""
+    from mytruv_cli.mcp_server import run_server
+
+    run_server()
 
 
 cli.add_command(auth_group)

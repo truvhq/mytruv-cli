@@ -4,7 +4,7 @@ from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
 from mytruv_cli.auth.store import clear_auth, is_authenticated
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
-from mytruv_cli.output.formatter import agent_option, output_error, output_json, output_success
+from mytruv_cli.output.formatter import output_error, output_json, output_success
 
 
 @click.group("auth")
@@ -18,7 +18,6 @@ def auth_group() -> None:
 
 @auth_group.command("login")
 @click.option("--no-browser", is_flag=True, help="Print the login URL instead of opening a browser.")
-@agent_option
 def login_cmd(no_browser: bool) -> None:
     """Authenticate via browser-based OAuth login.
 
@@ -53,7 +52,6 @@ def login_cmd(no_browser: bool) -> None:
 
 
 @auth_group.command("logout")
-@agent_option
 def logout_cmd() -> None:
     """Log out and clear stored tokens.
 
@@ -72,7 +70,6 @@ def logout_cmd() -> None:
 
 
 @auth_group.command("status")
-@agent_option
 def status_cmd() -> None:
     """Show current authentication status.
 

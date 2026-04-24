@@ -85,6 +85,12 @@ source <(mytruv completion zsh)
 mytruv completion fish | source
 ```
 
+### MCP Server
+
+| Command | Description |
+|---|---|
+| `mytruv mcp` | Start MCP stdio server for AI agent integration |
+
 ### Global Options
 
 | Option | Description |
@@ -102,10 +108,9 @@ mytruv completion fish | source
 
 mytruv is designed to be used by AI agents and scripts:
 
-- **When stdout is not a TTY** (piped, redirected, or with `--agent`): structured JSON on **stdout**. Errors are JSON on stdout; exit code reflects status.
-- **When stdout is a TTY**: Rich tables rendered on **stderr**; **stdout is empty**. Pipe the command or pass `--agent` to get parseable output.
-
-Human-facing messages (colors, progress, warnings) always go to **stderr**. Exit codes:
+- **stdout** carries data in the selected format: JSON by default when piped, or CSV with `--output csv`
+- **stderr** carries human-friendly messages (colors, tables, warnings) and structured error JSON on failure
+- **Exit code** signals success or failure; parse `stderr` for error details
 
 | Code | Meaning |
 |---|---|
@@ -113,7 +118,7 @@ Human-facing messages (colors, progress, warnings) always go to **stderr**. Exit
 | `1` | Error (API error, network error, etc.) |
 | `2` | Authentication required |
 
-Error format:
+Error format (emitted on **stderr**, never on stdout):
 ```json
 {"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}
 ```
@@ -141,9 +146,20 @@ fi
 
 ```bash
 mytruv balances                      # TTY: table on stderr, stdout empty
-mytruv balances --agent              # JSON on stdout, even in a TTY
+mytruv balances --json               # JSON on stdout, even in a TTY
+mytruv balances --output csv         # CSV on stdout
 mytruv balances | cat                # piped: JSON on stdout (auto-detected)
 mytruv balances > balances.json      # persist JSON to a file
+```
+
+## Gemini CLI Extension
+
+mytruv works as a [Gemini CLI](https://github.com/google-gemini/gemini-cli) extension, giving Gemini access to your financial data through the MCP protocol.
+
+Install the `mytruv` CLI first (see [Install](#install)) so it's on your `$PATH`, then:
+
+```bash
+gemini extensions install https://github.com/truvhq/mytruv-cli
 ```
 
 ## How Authentication Works
