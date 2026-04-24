@@ -75,6 +75,14 @@ def completion_cmd(ctx: click.Context, shell: str) -> None:
     click.echo(classes[shell](cli, {}, prog, complete_var).source())
 
 
+@cli.command("mcp")
+def mcp_cmd() -> None:
+    """Start MCP stdio server for AI agent integration."""
+    from mytruv_cli.mcp_server import run_server
+
+    run_server()
+
+
 cli.add_command(auth_group)
 cli.add_command(user_cmd)
 cli.add_command(links_cmd)
