@@ -86,28 +86,10 @@ def test_json_shorthand(mock_cls: MagicMock, runner: CliRunner) -> None:
 
 
 @patch("mytruv_cli.commands.data.TruvClient")
-def test_agent_flag_deprecated(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_balances_client()
-    result = runner.invoke(cli, ["balances", "--agent"])
-    assert result.exit_code == 0
-    # stderr is captured in result.stderr; combined in result.output in Click 8.2+.
-    assert "deprecated" in result.output.lower()
-
-
-@patch("mytruv_cli.commands.data.TruvClient")
 def test_no_color_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_balances_client()
     result = runner.invoke(cli, ["balances", "--no-color", "--json"])
     assert result.exit_code == 0
-
-
-def test_output_precedence_over_agent(runner: CliRunner) -> None:
-    """--output takes precedence over --agent."""
-    with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:
-        mock_cls.return_value = _mock_balances_client()
-        result = runner.invoke(cli, ["balances", "--output", "csv", "--agent"])
-    assert result.exit_code == 0
-    assert "type,currency" in result.output
 
 
 def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> None:
@@ -124,16 +106,6 @@ def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> No
         default_result = runner.invoke(cli, ["balances"])
         assert default_result.exit_code == 0
         json.loads(default_result.output)  # valid JSON, not CSV
-
-
-def test_agent_deprecation_warning_fires_per_invocation(runner: CliRunner) -> None:
-    """The deprecation notice must print on every --agent invocation, not once per process."""
-    with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:
-        mock_cls.return_value = _mock_balances_client()
-        first = runner.invoke(cli, ["balances", "--agent"])
-        second = runner.invoke(cli, ["balances", "--agent"])
-    assert "deprecated" in first.output.lower()
-    assert "deprecated" in second.output.lower()
 
 
 @patch("mytruv_cli.commands.data.TruvClient")

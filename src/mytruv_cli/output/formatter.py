@@ -13,14 +13,12 @@ from mytruv_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
 
 
 class OutputFormat(str, Enum):
-    TABLE = "table"
     JSON = "json"
     CSV = "csv"
 
 
 _format: OutputFormat | None = None
 _no_color: bool = False
-_agent_deprecation_shown: bool = False
 
 
 def _env_no_color() -> bool:
@@ -45,69 +43,46 @@ def set_no_color(enabled: bool) -> None:
     _console = _make_console()
 
 
-def current_format() -> OutputFormat:
-    """Resolve the effective output format. Falls back to TTY detection."""
+def current_format() -> OutputFormat | None:
+    """Resolve the effective output format. None means render a human-oriented table."""
     if _format is not None:
         return _format
-    return OutputFormat.TABLE if sys.stdout.isatty() else OutputFormat.JSON
+    return None if sys.stdout.isatty() else OutputFormat.JSON
 
 
 def is_interactive() -> bool:
     """True when rendering human-oriented tables. False for JSON/CSV."""
-    return current_format() == OutputFormat.TABLE
-
-
-def _emit_agent_deprecation() -> None:
-    global _agent_deprecation_shown  # noqa: PLW0603
-    if _agent_deprecation_shown:
-        return
-    _agent_deprecation_shown = True
-    print("Warning: --agent is deprecated; use --output json (or --json) instead.", file=sys.stderr)
+    return current_format() is None
 
 
 def output_option(fn):
-    """Adds --output / --json / --agent / --no-color flags to a command."""
+    """Adds --output / --json / --no-color flags to a command."""
 
     @click.option(
         "--output",
         "-o",
         "output_fmt",
-        type=click.Choice(["table", "json", "csv"], case_sensitive=False),
+        type=click.Choice(["json", "csv"], case_sensitive=False),
         default=None,
-        help="Output format: table, json, or csv. Default: table on TTY, json when piped.",
+        help="Output format: json or csv. Default: table on TTY, json when piped.",
     )
     @click.option("--json", "json_flag", is_flag=True, default=False, help="Shorthand for --output json.")
-    @click.option(
-        "--agent",
-        "-a",
-        "agent_flag",
-        is_flag=True,
-        default=False,
-        hidden=True,
-        help="Deprecated: use --output json.",
-    )
     @click.option("--no-color", "no_color_flag", is_flag=True, default=False, help="Disable ANSI color output.")
     @functools.wraps(fn)
     def wrapper(
         *args,
         output_fmt: str | None,
         json_flag: bool,
-        agent_flag: bool,
         no_color_flag: bool,
         **kwargs,
     ):
         # Reset state so earlier invocations (tests, embedded callers) don't leak.
-        global _agent_deprecation_shown  # noqa: PLW0603
-        _agent_deprecation_shown = False
         set_format(None)
         set_no_color(no_color_flag)
 
         if output_fmt is not None:
             set_format(OutputFormat(output_fmt.lower()))
         elif json_flag:
-            set_format(OutputFormat.JSON)
-        elif agent_flag:
-            _emit_agent_deprecation()
             set_format(OutputFormat.JSON)
         return fn(*args, **kwargs)
 
@@ -128,9 +103,9 @@ def output_csv(rows: list[dict], columns: list[str]) -> None:
 
 
 def output_table(rows: list[dict], columns: list[str], title: str | None = None) -> None:
-    """Render a table (TTY), CSV to stdout, or JSON of the rows — depending on the active format."""
+    """Render rows in the active output format."""
     fmt = current_format()
-    if fmt == OutputFormat.TABLE:
+    if fmt is None:
         table = Table(title=title)
         for col in columns:
             table.add_column(col)

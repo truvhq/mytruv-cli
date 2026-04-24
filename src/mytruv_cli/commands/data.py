@@ -187,7 +187,7 @@ def transactions_cmd(
         output_json(data)
         return
 
-    if truncated and page is None and fmt == OutputFormat.TABLE:
+    if truncated and page is None and fmt is None:
         output_info(
             f"[yellow]Warning:[/yellow] Showing {len(transactions)} of {total_count} transactions. "
             f"Use --page and --page-size to paginate."
