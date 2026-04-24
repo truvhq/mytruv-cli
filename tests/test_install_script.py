@@ -42,9 +42,9 @@ class TestInstallScriptConfig:
         content = INSTALL_SCRIPT.read_text()
         assert 'BINARY_NAME="mytruv"' in content or "BINARY_NAME='mytruv'" in content
 
-    def test_default_install_dir_is_usr_local_bin(self):
+    def test_default_install_dir_is_user_local_bin(self):
         content = INSTALL_SCRIPT.read_text()
-        assert "/usr/local/bin" in content
+        assert '${INSTALL_DIR:-$HOME/.local/bin}' in content
 
 
 class TestInstallDetectOS:

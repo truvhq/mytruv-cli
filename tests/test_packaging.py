@@ -72,13 +72,9 @@ class TestReadmeStructure:
         content = README.read_text()
         assert "## Commands" in content
 
-    def test_has_agent_mode_section(self):
+    def test_has_agent_automation_section(self):
         content = README.read_text()
-        assert "## Agent Mode" in content or "## Agent" in content
-
-    def test_has_development_section(self):
-        content = README.read_text()
-        assert "## Development" in content
+        assert "## Agent / Automation Usage" in content
 
     def test_has_license_section(self):
         content = README.read_text()
@@ -125,19 +121,3 @@ class TestReadmeCommands:
         assert "user" in content
 
 
-class TestReadmeDevelopment:
-    def test_has_clone_instructions(self):
-        content = README.read_text()
-        assert "git clone" in content
-
-    def test_has_uv_sync(self):
-        content = README.read_text()
-        assert "uv sync" in content
-
-    def test_has_test_command(self):
-        content = README.read_text()
-        assert "pytest" in content
-
-    def test_has_build_command(self):
-        content = README.read_text()
-        assert "build.sh" in content

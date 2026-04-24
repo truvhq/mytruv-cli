@@ -3,7 +3,7 @@ set -e
 
 REPO="truvhq/mytruv-cli"
 BINARY_NAME="mytruv"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Validate INSTALL_DIR is an absolute path
 case "$INSTALL_DIR" in
@@ -20,9 +20,10 @@ main() {
         exit 1
     fi
 
-    # Create INSTALL_DIR if missing, with sudo fallback for system paths
+    # Create INSTALL_DIR if missing, with sudo fallback for system paths.
     if [ ! -d "$INSTALL_DIR" ]; then
         if ! mkdir -p "$INSTALL_DIR" 2>/dev/null; then
+            echo "Note: ${INSTALL_DIR} requires elevated permissions; you may be prompted for your password." >&2
             sudo mkdir -p "$INSTALL_DIR"
         fi
     fi
@@ -37,8 +38,8 @@ main() {
         exit 1
     fi
 
-    if ! echo "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-        echo "Error: unexpected version format: '${version}' (expected vMAJOR.MINOR.PATCH)" >&2
+    if ! echo "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+        echo "Error: unexpected version format: '${version}' (expected vMAJOR.MINOR.PATCH[-PRERELEASE])" >&2
         exit 1
     fi
 
@@ -70,13 +71,24 @@ main() {
         mv "${tmpdir}/${extracted}" "${INSTALL_DIR}/${BINARY_NAME}"
         chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
     else
+        echo "Note: ${INSTALL_DIR} is not writable; you may be prompted for your password." >&2
         sudo mv "${tmpdir}/${extracted}" "${INSTALL_DIR}/${BINARY_NAME}"
         sudo chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
     fi
 
     echo ""
     echo "${BINARY_NAME} ${version} installed successfully!"
-    echo "Run '${BINARY_NAME} --help' to get started."
+
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*)
+            echo "Run '${BINARY_NAME} --help' to get started."
+            ;;
+        *)
+            echo "Note: ${INSTALL_DIR} is not on your PATH. Add it, for example:"
+            echo "  echo 'export PATH=\"${INSTALL_DIR}:\$PATH\"' >> ~/.profile"
+            echo "Then run '${BINARY_NAME} --help' to get started."
+            ;;
+    esac
 }
 
 detect_os() {

@@ -34,9 +34,9 @@ class TestWorkflowBuildMatrix:
     def test_has_build_job(self, workflow):
         assert "build" in workflow["jobs"]
 
-    def test_has_four_platform_combinations(self, workflow):
+    def test_has_five_platform_combinations(self, workflow):
         matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
-        assert len(matrix) == 4, f"Expected 4 platform combos, got {len(matrix)}"
+        assert len(matrix) == 5, f"Expected 5 platform combos, got {len(matrix)}"
 
     def test_covers_darwin_arm64(self, workflow):
         matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
@@ -57,6 +57,17 @@ class TestWorkflowBuildMatrix:
         matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
         platforms = [(m["platform"], m["arch"]) for m in matrix]
         assert ("linux", "arm64") in platforms
+
+    def test_covers_windows_amd64(self, workflow):
+        matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
+        platforms = [(m["platform"], m["arch"]) for m in matrix]
+        assert ("windows", "amd64") in platforms
+
+    def test_windows_entry_sets_exe_extension(self, workflow):
+        """Windows binaries must carry the .exe extension via matrix.ext."""
+        matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
+        entry = next(m for m in matrix if m["platform"] == "windows")
+        assert entry["ext"] == ".exe", f"windows entry must set ext='.exe', got {entry.get('ext')!r}"
 
     def test_uses_python_313(self, workflow):
         steps = workflow["jobs"]["build"]["steps"]

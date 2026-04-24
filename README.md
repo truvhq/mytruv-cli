@@ -19,6 +19,14 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv tool install git+https://github.com/truvhq/mytruv-cli.git
 ```
 
+Installs to `~/.local/bin` by default; override with `INSTALL_DIR=/usr/local/bin`. Linux binaries need glibc 2.35+ (Ubuntu 22.04, Debian 12, RHEL 9). The binary is a self-extracting bundle that unpacks to `~/.cache/nuitka-onefile/` on first run — set `NUITKA_ONEFILE_TEMPDIR` to override if `$HOME` is read-only.
+
+To uninstall:
+
+```bash
+rm "$(command -v mytruv)"
+```
+
 ## Quick Start
 
 ```bash
