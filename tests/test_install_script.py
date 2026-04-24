@@ -1,5 +1,6 @@
 """Tests for scripts/install.sh"""
 
+import os
 import shutil
 import stat
 import subprocess
@@ -120,13 +121,23 @@ class TestInstallChecksumVerification:
             checksum_file = Path(tmpdir) / "test.tar.gz.sha256"
             checksum_file.write_text("abc123  test.tar.gz")
 
-            # Hide sha256sum and shasum by using a PATH with no real tools
-            full_cmd = (
-                f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
-                f'PATH=/nonexistent verify_checksum "{tmpdir}" "test.tar.gz"'
-            )
-            result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
+            # Build a PATH that only exposes awk (needed to read the .sha256 file);
+            # omitting sha256sum/shasum forces the "no sha256 tool found" branch
+            # rather than failing earlier inside awk.
+            with tempfile.TemporaryDirectory() as tooldir:
+                awk_path = shutil.which("awk")
+                assert awk_path, "awk must be available on the test host"
+                os.symlink(awk_path, Path(tooldir) / "awk")
+
+                full_cmd = (
+                    f'eval "$(sed "/^main$/d" "{INSTALL_SCRIPT}")"; '
+                    f'PATH="{tooldir}" verify_checksum "{tmpdir}" "test.tar.gz"'
+                )
+                result = subprocess.run(["sh", "-c", full_cmd], capture_output=True, text=True, timeout=30)
             assert result.returncode != 0, "verify_checksum must fail when no sha256 tool is available"
+            assert "no sha256 tool found" in result.stderr.lower(), (
+                f"expected the 'no sha256 tool found' branch; got: {result.stderr!r}"
+            )
 
     def test_checksum_fails_when_checksum_file_empty(self):
         """verify_checksum must fail when the .sha256 file is empty."""
@@ -206,7 +217,7 @@ class TestInstallScriptFlow:
         """INSTALL_DIR should be overridable via environment variable."""
         content = INSTALL_SCRIPT.read_text()
         assert "${INSTALL_DIR:-" in content, (
-            "INSTALL_DIR should use ${INSTALL_DIR:-/usr/local/bin} for env var override"
+            "INSTALL_DIR should use ${INSTALL_DIR:-$HOME/.local/bin} for env var override"
         )
 
     def test_mytruv_version_overridable(self):
