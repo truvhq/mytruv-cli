@@ -164,3 +164,53 @@ def test_recurring_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -
     assert result.exit_code == 0
     lines = [line for line in result.output.splitlines() if line.strip()]
     assert lines == ["direction,name,amount,status,last,next"]
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_run_csv_falls_back_to_empty_csv_on_unexpected_shape(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """_run-based commands must stay in CSV when the API returns a non-list for table_key."""
+    mock = MagicMock()
+    # Simulate malformed / unexpected response where aggregated_balances is a dict, not a list.
+    mock.get_balances.return_value = {"total_accounts": 0, "aggregated_balances": {}}
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["balances", "--output", "csv"])
+    assert result.exit_code == 0
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert lines == ["type,currency,balance,available,accounts"]
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_paginated_json_does_not_flag_truncated(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """When the user paginates intentionally, JSON output must not flag truncated=True."""
+    mock_cls.return_value = _make_transactions_client(count=50, rows=10)
+    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--page", "1", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "truncated" not in data
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_unpaginated_json_flags_truncated(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Without --page, a capped response must still set truncated=True for JSON consumers."""
+    mock_cls.return_value = _make_transactions_client(count=50, rows=10)
+    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data.get("truncated") is True
+
+
+def _make_transactions_client(count: int, rows: int) -> MagicMock:
+    mock = MagicMock()
+    mock.get_transactions.return_value = {
+        "count": count,
+        "transactions": [
+            {"posted_at": "2025-03-01", "description": f"tx{i}", "amount": "-1.00", "type": "DEBIT"}
+            for i in range(rows)
+        ],
+    }
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    return mock

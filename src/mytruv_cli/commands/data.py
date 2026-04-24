@@ -67,7 +67,11 @@ def _run(
     if table_key and isinstance(data, dict):
         rows = data.get(table_key, [])
     if not isinstance(rows, list):
-        output_json(data)
+        # Unexpected shape: stay in the advertised format instead of silently emitting JSON on stdout.
+        if fmt == OutputFormat.CSV:
+            output_csv([], table_columns)
+        else:
+            output_json(data)
         return
     if format_row:
         rows = [format_row(r) for r in rows]
@@ -183,7 +187,7 @@ def transactions_cmd(
     fmt = current_format()
 
     if fmt == OutputFormat.JSON:
-        if truncated:
+        if truncated and page is None:
             data["truncated"] = True
         output_json(data)
         return

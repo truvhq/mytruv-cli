@@ -44,10 +44,17 @@ def test_auth_status_not_authenticated(runner: CliRunner) -> None:
 
 
 def test_auth_logout_when_not_authenticated(runner: CliRunner) -> None:
-    result = runner.invoke(cli, ["auth", "logout", "--json"])
+    result = runner.invoke(cli, ["auth", "logout"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["status"] == "logged_out"
+
+
+def test_auth_commands_reject_format_flags(runner: CliRunner) -> None:
+    """Auth commands always emit JSON; format flags are nonsensical and must be rejected."""
+    for args in (["auth", "status", "--json"], ["auth", "status", "--output", "csv"]):
+        result = runner.invoke(cli, args)
+        assert result.exit_code != 0, f"expected rejection for {args!r}"
 
 
 # -- Data commands (mocked client) --
