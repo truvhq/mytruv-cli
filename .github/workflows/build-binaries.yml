@@ -17,20 +17,33 @@ jobs:
           - os: macos-14
             arch: arm64
             platform: darwin
+            ext: ""
           - os: macos-15-intel
             arch: amd64
             platform: darwin
+            ext: ""
           - os: ubuntu-22.04
             arch: amd64
             platform: linux
+            ext: ""
           - os: ubuntu-22.04-arm
             arch: arm64
             platform: linux
+            ext: ""
+          - os: windows-2022
+            arch: amd64
+            platform: windows
+            ext: ".exe"
 
     runs-on: ${{ matrix.os }}
 
+    defaults:
+      run:
+        shell: bash
+
     env:
       BINARY_NAME: mytruv-${{ matrix.platform }}-${{ matrix.arch }}
+      BINARY_FILE: mytruv-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -48,7 +61,7 @@ jobs:
           uv run python -m nuitka \
             --standalone \
             --onefile \
-            --output-filename="$BINARY_NAME" \
+            --output-filename="$BINARY_FILE" \
             --output-dir=dist \
             --include-package=mytruv_cli \
             --python-flag=no_site \
@@ -56,12 +69,12 @@ jobs:
             src/mytruv_cli/main.py
 
       - name: Smoke test
-        run: ./dist/"$BINARY_NAME" --help
+        run: ./dist/"$BINARY_FILE" --help
 
       - name: Create archive
         run: |
           cd dist
-          tar -czf "${BINARY_NAME}.tar.gz" "$BINARY_NAME"
+          tar -czf "${BINARY_NAME}.tar.gz" "$BINARY_FILE"
 
       - name: Generate checksum
         run: |
