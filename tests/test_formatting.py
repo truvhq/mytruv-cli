@@ -92,6 +92,21 @@ def test_no_color_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert result.exit_code == 0
 
 
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_no_color_env(mock_cls: MagicMock, runner: CliRunner, monkeypatch) -> None:
+    """NO_COLOR env var must disable ANSI colors without requiring --no-color."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    from mytruv_cli.output import formatter
+
+    # Re-evaluate console after env change so the test reflects real startup order.
+    formatter.set_no_color(False)
+    assert formatter._env_no_color() is True
+
+    mock_cls.return_value = _mock_balances_client()
+    result = runner.invoke(cli, ["balances", "--json"])
+    assert result.exit_code == 0
+
+
 def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> None:
     """Each @output_option invocation must reset module state so earlier flags don't persist."""
     with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:

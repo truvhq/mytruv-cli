@@ -296,7 +296,8 @@ def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balances", "--json"])
     assert result.exit_code == 2
-    data = json.loads(result.output)
+    assert result.stdout == ""
+    data = json.loads(result.stderr)
     assert data["error"] == "auth_required"
 
 
@@ -308,6 +309,41 @@ def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
 
     result = runner.invoke(cli, ["balances", "--json"])
     assert result.exit_code == 1
-    data = json.loads(result.output)
+    assert result.stdout == ""
+    data = json.loads(result.stderr)
     assert data["error"] == "not_found"
     assert data["message"] == "No data found"
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_transactions_csv_truncation_warning_on_stderr(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """CSV mode must surface truncation on stderr — stdout stays pure CSV so pipelines don't choke."""
+    mock_cls.return_value = _mock_client(
+        "get_transactions",
+        {
+            "count": 10,
+            "transactions": [
+                {"posted_at": "2025-03-01", "description": "Coffee", "amount": "-5.50", "type": "DEBIT"},
+            ],
+        },
+    )
+
+    result = runner.invoke(cli, ["transactions", "--from", "2025-01-01", "--output", "csv"])
+    assert result.exit_code == 0
+    assert result.stdout.splitlines()[0] == "posted_at,description,amount,type"
+    assert "Warning" in result.stderr
+    assert "Showing 1 of 10" in result.stderr
+
+
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_csv_error_keeps_stdout_clean(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """--output csv must not leak a JSON error onto stdout — pipelines rely on a consistent data channel."""
+    from mytruv_cli.client.api import APIError
+
+    mock_cls.return_value = _mock_client_error("get_balances", APIError(500, "server_error", "boom"))
+
+    result = runner.invoke(cli, ["balances", "--output", "csv"])
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    data = json.loads(result.stderr)
+    assert data["error"] == "server_error"

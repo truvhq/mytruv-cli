@@ -124,14 +124,20 @@ def output_info(message: str) -> None:
         _console.print(message)
 
 
-def output_error(error: str, message: str, exit_code: int = EXIT_ERROR) -> None:
-    """Print structured error and exit."""
-    error_obj = {"error": error, "message": message}
+def output_warning(message: str) -> None:
+    """Emit a warning to stderr regardless of output format, so stdout stays format-consistent."""
+    if is_interactive():
+        _console.print(f"[yellow]Warning:[/yellow] {message}")
+    else:
+        print(f"Warning: {message}", file=sys.stderr)
 
+
+def output_error(error: str, message: str, exit_code: int = EXIT_ERROR) -> None:
+    """Write a structured error to stderr and exit, keeping stdout format-consistent."""
     if is_interactive():
         _console.print(f"[red]Error:[/red] {message}")
     else:
-        print(json.dumps(error_obj), file=sys.stdout)
+        print(json.dumps({"error": error, "message": message}), file=sys.stderr)
 
     raise SystemExit(exit_code)
 
