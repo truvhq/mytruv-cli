@@ -6,46 +6,35 @@ Authenticate with your MyTruv account via browser-based OAuth and query balances
 
 ## Install
 
+Download and run the install script:
+
 ```bash
-# pip
-pip install .
-
-# pipx (isolated install)
-pipx install .
-
-# uv
-uv tool install .
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/main/scripts/install.sh -o install.sh
+sh install.sh
 ```
 
-After installation, the `mytruv` command is available globally.
-
-You can also run without installing:
+Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-# With uv
-cd mytruv-cli && uv run mytruv --help
+uv tool install git+https://github.com/truvhq/mytruv-cli.git
+```
 
-# With Python directly
-python -m mytruv_cli --help
+Installs to `~/.local/bin` by default; override with `INSTALL_DIR=/usr/local/bin`. Linux binaries need glibc 2.35+ (Ubuntu 22.04, Debian 12, RHEL 9). The binary is a self-extracting bundle that unpacks to `~/.cache/nuitka-onefile/` on first run — set `NUITKA_ONEFILE_TEMPDIR` to override if `$HOME` is read-only.
+
+To uninstall:
+
+```bash
+rm "$(command -v mytruv)"
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Log in (opens browser)
-mytruv auth login
-
-# 2. View your accounts
-mytruv links
-
-# 3. Check balances
-mytruv balances
-
-# 4. Pull recent transactions
-mytruv transactions
-
-# 5. Log out
-mytruv auth logout
+mytruv auth login          # authenticate via browser
+mytruv links               # list connected accounts
+mytruv balances            # check balances
+mytruv transactions        # pull recent transactions
+mytruv auth logout         # log out
 ```
 
 ## Commands
@@ -67,7 +56,7 @@ mytruv auth logout
 | `mytruv links` | List connected bank accounts and payroll providers |
 | `mytruv balances` | Aggregated balances by account type |
 | `mytruv liabilities` | Aggregated liabilities (credit cards, loans) |
-| `mytruv transactions` | Bank transactions, last 7 days (supports `--from`, `--to`, `--categories`, `--page`) |
+| `mytruv transactions` | Bank transactions (supports `--from`, `--to`, `--categories`, `--page`) |
 | `mytruv spending` | Spending analysis (supports `--group-by`, `--days`, `--time-period`, `--start-date`, `--end-date`) |
 | `mytruv income` | Income report from payroll and bank sources (supports `--days`) |
 | `mytruv recurring` | Recurring transactions (subscriptions, deposits) |
@@ -119,13 +108,13 @@ mytruv is designed to be used by AI agents and scripts:
 
 - **stdout** carries data in the selected format: JSON by default when piped, or CSV with `--output csv`
 - **stderr** carries human-friendly messages (colors, tables, warnings) and structured error JSON on failure
-- **Exit code** signals success or failure; parse `stderr` for error details:
+- **Exit code** signals success or failure; parse `stderr` for error details
 
-```
-Exit 0 — success
-Exit 1 — error (API error, network error, etc.)
-Exit 2 — authentication required
-```
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Error (API error, network error, etc.) |
+| `2` | Authentication required |
 
 Error format (emitted on **stderr**, never on stdout):
 ```json
@@ -153,15 +142,12 @@ fi
 
 ### Interactive vs Piped
 
-When run in a terminal (TTY), commands display rich tables. When piped, output is raw JSON:
-
 ```bash
-# Terminal: shows a formatted table
-mytruv balances
-
-# Piped: outputs JSON
-mytruv balances | cat
-mytruv balances > balances.json
+mytruv balances                      # TTY: table on stderr, stdout empty
+mytruv balances --json               # JSON on stdout, even in a TTY
+mytruv balances --output csv         # CSV on stdout
+mytruv balances | cat                # piped: JSON on stdout (auto-detected)
+mytruv balances > balances.json      # persist JSON to a file
 ```
 
 ## Gemini CLI Extension
@@ -182,3 +168,7 @@ gemini extensions install https://github.com/truvhq/mytruv-cli
 
 - Python 3.10+
 - A MyTruv account with at least one connected financial account
+
+## License
+
+MIT
