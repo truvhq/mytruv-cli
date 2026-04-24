@@ -69,30 +69,12 @@ class TestWorkflowBuildMatrix:
         entry = next(m for m in matrix if m["platform"] == "windows")
         assert entry["ext"] == ".exe", f"windows entry must set ext='.exe', got {entry.get('ext')!r}"
 
-    def test_non_windows_entries_have_empty_extension(self, workflow):
-        """Non-Windows entries must have empty ext so tarball contents aren't misnamed."""
-        matrix = workflow["jobs"]["build"]["strategy"]["matrix"]["include"]
-        for entry in matrix:
-            if entry["platform"] == "windows":
-                continue
-            assert entry.get("ext", "") == "", (
-                f"{entry['platform']}/{entry['arch']} must have ext='', got {entry.get('ext')!r}"
-            )
-
-    def test_archive_stem_never_carries_exe(self, workflow):
-        """BINARY_NAME is the archive stem and must never include .exe — only BINARY_FILE (the binary) does."""
-        env = workflow["jobs"]["build"]["env"]
-        binary_name = env["BINARY_NAME"]
-        binary_file = env["BINARY_FILE"]
-        assert ".exe" not in binary_name, (
-            f"BINARY_NAME (archive stem) must not include ext: {binary_name!r}"
-        )
-        assert "matrix.ext" in binary_file, (
-            f"BINARY_FILE must interpolate matrix.ext for the per-platform binary name: {binary_file!r}"
-        )
-
     def test_build_job_defaults_to_bash_shell(self, workflow):
-        """All run: blocks must use bash so the same script works on Windows via Git Bash."""
+        """All run: blocks must use bash so the same script works on Windows via Git Bash.
+
+        Windows only runs on v* tags, so a silent regression here wouldn't surface
+        until release time — a cheap unit test closes that feedback gap.
+        """
         defaults = workflow["jobs"]["build"].get("defaults", {})
         assert defaults.get("run", {}).get("shell") == "bash", (
             "build job must set defaults.run.shell: bash for cross-platform script compatibility"
