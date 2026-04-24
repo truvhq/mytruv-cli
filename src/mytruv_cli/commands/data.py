@@ -194,8 +194,7 @@ def transactions_cmd(
 
     if truncated and page is None:
         output_warning(
-            f"Showing {len(transactions)} of {total_count} transactions. "
-            f"Use --page and --page-size to paginate."
+            f"Showing {len(transactions)} of {total_count} transactions. Use --page and --page-size to paginate."
         )
     rows = [{**r, "amount": _fmt_dollar(r.get("amount"))} for r in transactions]
     output_table(
