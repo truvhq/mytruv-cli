@@ -19,16 +19,6 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv tool install git+https://github.com/truvhq/mytruv-cli.git
 ```
 
-The install script supports environment variables for automation:
-
-| Variable | Description |
-|---|---|
-| `INSTALL_DIR` | Override install location (default: `/usr/local/bin`) |
-| `MYTRUV_VERSION` | Pin a specific version (default: latest release) |
-| `GITHUB_TOKEN` | Authenticate GitHub API requests to avoid rate limits |
-
-> Checksums verify download integrity (corruption detection). They do not protect against a compromised distribution channel. Review the [install script](scripts/install.sh) before running it.
-
 ## Quick Start
 
 ```bash
@@ -165,27 +155,6 @@ gemini extensions install https://github.com/truvhq/mytruv-cli
 ## How Authentication Works
 
 `mytruv auth login` opens your browser for secure OAuth login. Tokens refresh automatically — no need to re-login unless your session fully expires.
-
-## Development
-
-```bash
-git clone https://github.com/truvhq/mytruv-cli.git
-cd mytruv-cli
-uv sync --all-extras
-uv run pre-commit install --install-hooks
-```
-
-Run tests:
-
-```bash
-uv run pytest
-```
-
-Build a standalone binary:
-
-```bash
-./scripts/build.sh
-```
 
 ## Requirements
 
