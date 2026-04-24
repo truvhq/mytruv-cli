@@ -117,9 +117,9 @@ mytruv completion fish | source
 
 mytruv is designed to be used by AI agents and scripts:
 
-- **stdout** is always valid JSON — pipe it, parse it, chain it
-- **stderr** has human-friendly messages (colors, tables) — ignored by parsers
-- **Errors** are structured JSON on stdout with meaningful exit codes:
+- **stdout** carries data in the selected format: JSON by default when piped, or CSV with `--output csv`
+- **stderr** carries human-friendly messages (colors, tables, warnings) and structured error JSON on failure
+- **Exit code** signals success or failure; parse `stderr` for error details:
 
 ```
 Exit 0 — success
@@ -127,7 +127,7 @@ Exit 1 — error (API error, network error, etc.)
 Exit 2 — authentication required
 ```
 
-Error format:
+Error format (emitted on **stderr**, never on stdout):
 ```json
 {"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}
 ```
