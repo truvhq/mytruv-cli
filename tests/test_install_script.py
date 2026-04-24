@@ -44,7 +44,7 @@ class TestInstallScriptConfig:
 
     def test_default_install_dir_is_user_local_bin(self):
         content = INSTALL_SCRIPT.read_text()
-        assert '${INSTALL_DIR:-$HOME/.local/bin}' in content
+        assert "${INSTALL_DIR:-$HOME/.local/bin}" in content
 
 
 class TestInstallDetectOS:

@@ -119,5 +119,3 @@ class TestReadmeCommands:
     def test_documents_user(self):
         content = README.read_text()
         assert "user" in content
-
-
