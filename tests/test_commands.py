@@ -410,41 +410,6 @@ def test_transactions_categories_legacy_alias(mock_cls: MagicMock, runner: CliRu
     assert mock.get_transactions.call_args.kwargs["categories"] == "Food,Transfer"
 
 
-# -- Subscription --
-
-
-@patch("mytruv_cli.commands.subscription.TruvClient")
-def test_subscription_active(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client(
-        "get_subscription",
-        {
-            "name": "Pro",
-            "price": 999,
-            "currency": "usd",
-            "interval": "month",
-            "is_trial": False,
-            "current_period_end": 1735689600,
-        },
-    )
-
-    result = runner.invoke(cli, ["subscription", "--json"])
-    assert result.exit_code == 0, result.output
-    data = json.loads(result.output)
-    assert data["active"] is True
-    assert data["subscription"]["name"] == "Pro"
-
-
-@patch("mytruv_cli.commands.subscription.TruvClient")
-def test_subscription_inactive(mock_cls: MagicMock, runner: CliRunner) -> None:
-    mock_cls.return_value = _mock_client("get_subscription", None)
-
-    result = runner.invoke(cli, ["subscription", "--json"])
-    assert result.exit_code == 0
-    data = json.loads(result.output)
-    assert data["active"] is False
-    assert data["subscription"] is None
-
-
 # -- Insights --
 
 

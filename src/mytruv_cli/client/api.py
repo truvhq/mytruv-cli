@@ -253,14 +253,5 @@ class TruvClient:
     def get_link_report(self, link_id: str) -> dict:
         return self._request("GET", f"/v1/links/{link_id}/report")
 
-    def get_subscription(self) -> dict | None:
-        """Returns the active subscription, or None if the user has no active subscription (404)."""
-        try:
-            return self._request("GET", "/v1/billing/subscriptions/active")
-        except APIError as e:
-            if e.status_code == 404:
-                return None
-            raise
-
     def get_insights(self) -> dict:
         return self._request("GET", "/v2/user/insights")

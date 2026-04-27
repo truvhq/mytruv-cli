@@ -47,7 +47,6 @@ def test_all_commands_registered() -> None:
         "recurring",
         "balance-history",
         "mcp",
-        "subscription",
         "insights",
         "completion",
     }
