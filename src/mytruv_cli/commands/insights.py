@@ -1,4 +1,5 @@
 import click
+from rich.markup import escape
 
 from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
@@ -55,12 +56,12 @@ def insights_cmd() -> None:
         return
 
     for item in insights:
-        priority = (item.get("priority") or "").upper()
-        title = item.get("title", "")
-        summary = item.get("summary", "")
-        detail = item.get("detail", "")
+        priority = escape((item.get("priority") or "").upper())
+        title = escape(item.get("title", ""))
+        summary = escape(item.get("summary", ""))
+        detail = escape(item.get("detail", ""))
         follow_up = item.get("follow_up")
-        category = item.get("category", "")
+        category = escape(item.get("category", ""))
 
         output_info(f"\n[bold]{title}[/bold]  [dim]({category}, {priority})[/dim]")
         if summary:
@@ -68,4 +69,4 @@ def insights_cmd() -> None:
         if detail:
             output_info(detail)
         if follow_up:
-            output_info(f"[cyan]→ {follow_up}[/cyan]")
+            output_info(f"[cyan]→ {escape(follow_up)}[/cyan]")

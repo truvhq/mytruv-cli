@@ -178,7 +178,12 @@ def liabilities_cmd() -> None:
     help="Sort order. Default: desc.",
 )
 @click.option("--page", type=int, default=None, help="Page number (1-based). Omit to fetch all.")
-@click.option("--page-size", type=int, default=500, help="Results per page (10-500). Default: 500.")
+@click.option(
+    "--page-size",
+    type=click.IntRange(10, 500),
+    default=500,
+    help="Results per page (10-500). Default: 500.",
+)
 @output_option
 def transactions_cmd(
     from_date: str | None,

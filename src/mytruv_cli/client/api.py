@@ -117,8 +117,8 @@ class TruvClient:
         except httpx.RequestError as e:
             raise NetworkError(f"Network error: {e}") from e
 
-    def _request(self, method: str, path: str, **kwargs: object) -> dict | bytes:
-        """Make an authenticated API request. Returns JSON dict or raw bytes for CSV."""
+    def _send_with_auth(self, method: str, path: str, **kwargs: object) -> httpx.Response:
+        """Send an authenticated request, retrying once on 401. Raises on >=400."""
         token = self._get_access_token()
         resp = self._send(method, path, token, **kwargs)
 
@@ -141,10 +141,15 @@ class TruvClient:
                 pass
             raise APIError(resp.status_code, error, message)
 
-        content_type = resp.headers.get("content-type", "").lower()
-        if content_type.startswith("text/csv"):
-            return resp.content
-        return resp.json()
+        return resp
+
+    def _request(self, method: str, path: str, **kwargs: object) -> dict:
+        """Make an authenticated API request expecting a JSON body."""
+        return self._send_with_auth(method, path, **kwargs).json()
+
+    def _request_bytes(self, method: str, path: str, **kwargs: object) -> bytes:
+        """Make an authenticated API request expecting raw bytes (e.g. CSV export)."""
+        return self._send_with_auth(method, path, **kwargs).content
 
     # ── User ──
 
@@ -223,7 +228,7 @@ class TruvClient:
             sort_by=sort_by,
             sort_order=sort_order,
         )
-        return self._request("GET", "/v2/users/transactions/export", params=params)
+        return self._request_bytes("GET", "/v2/users/transactions/export", params=params)
 
     def get_spending(self, **params: object) -> dict:
         return self._request("GET", "/v2/users/spending", params=params)
