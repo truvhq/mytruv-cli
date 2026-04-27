@@ -292,19 +292,57 @@ def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["results"][0]["provider"]["name"] == "Chase"
 
 
-@patch("mytruv_cli.commands.links.TruvClient")
-def test_links_report_renders_json(mock_cls: MagicMock, runner: CliRunner) -> None:
-    """`links report` always emits JSON; the payload shape isn't tabular."""
-    mock_cls.return_value = _mock_client(
-        "get_link_report",
-        {"income": {"employer": "Acme", "ytd_gross": "85000"}, "statements": []},
-    )
+def _mock_links_client(links: list, **report_returns: dict) -> MagicMock:
+    """Mock TruvClient with get_links plus optional report returns."""
+    mock = MagicMock()
+    mock.get_links.return_value = {"results": links, "count": len(links)}
+    for method, value in report_returns.items():
+        getattr(mock, method).return_value = value
+    mock.__enter__ = MagicMock(return_value=mock)
+    mock.__exit__ = MagicMock(return_value=False)
+    return mock
 
-    result = runner.invoke(cli, ["links", "report", "abc123"])
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_links_report_payroll(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Payroll links route to /v1/links/{id}/report."""
+    mock = _mock_links_client(
+        [{"id": "p1", "data_source": "payroll"}],
+        get_link_report={"income": {"employer": "Acme"}},
+    )
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["links", "report", "p1"])
     assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["income"]["employer"] == "Acme"
+    mock.get_link_report.assert_called_once_with("p1")
+    mock.get_bank_income_report.assert_not_called()
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_links_report_bank(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """Bank links route to /v1/links/{id}/income/transactions/reports."""
+    mock = _mock_links_client(
+        [{"id": "b1", "data_source": "financial_accounts"}],
+        get_bank_income_report={"income_streams": []},
+    )
+    mock_cls.return_value = mock
+
+    result = runner.invoke(cli, ["links", "report", "b1"])
+    assert result.exit_code == 0, result.output
+    assert "income_streams" in json.loads(result.output)
+    mock.get_bank_income_report.assert_called_once_with("b1")
+    mock.get_link_report.assert_not_called()
+
+
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_links_report_unknown_id(mock_cls: MagicMock, runner: CliRunner) -> None:
+    mock_cls.return_value = _mock_links_client([{"id": "p1", "data_source": "payroll"}])
+
+    result = runner.invoke(cli, ["links", "report", "missing"])
+    assert result.exit_code == 1
     data = json.loads(result.output)
-    assert data["income"]["employer"] == "Acme"
-    mock_cls.return_value.get_link_report.assert_called_once_with("abc123")
+    assert data["error"] == "not_found"
 
 
 # -- Error handling --

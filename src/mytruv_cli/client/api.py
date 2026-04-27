@@ -258,5 +258,8 @@ class TruvClient:
     def get_link_report(self, link_id: str) -> dict:
         return self._request("GET", f"/v1/links/{link_id}/report")
 
+    def get_bank_income_report(self, link_id: str) -> dict:
+        return self._request("GET", f"/v1/links/{link_id}/income/transactions/reports")
+
     def get_insights(self) -> dict:
         return self._request("GET", "/v2/user/insights")

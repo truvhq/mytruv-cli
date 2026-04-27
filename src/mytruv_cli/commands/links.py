@@ -52,18 +52,48 @@ def links_cmd(ctx: click.Context) -> None:
         _list_links()
 
 
+_PAYROLL_SOURCES = {"payroll", "employer", "income"}
+_BANK_SOURCES = {"financial_accounts", "bank"}
+
+
+def _find_link(links: list, link_id: str) -> dict | None:
+    for link in links:
+        if link.get("id") == link_id:
+            return link
+    return None
+
+
 @links_cmd.command("report")
 @click.argument("link_id")
 @output_option
 def report_cmd(link_id: str) -> None:
-    """Show the payroll income report for a link.
+    """Show the income report for a link.
 
-    The report payload is deeply nested and not usefully tabular, so it
-    is always rendered as JSON regardless of --output.
+    Dispatches to the payroll report for payroll links and the bank
+    transaction-based income report for financial-account links. Find
+    link IDs via ``mytruv links``. Always rendered as JSON regardless
+    of --output — the report payload is deeply nested and not tabular.
     """
     try:
         with TruvClient() as client:
-            data = client.get_link_report(link_id)
+            listing = client.get_links()
+            links = listing if isinstance(listing, list) else listing.get("links", listing.get("results", []))
+            link = _find_link(links, link_id)
+            if link is None:
+                output_error("not_found", f"Link {link_id} not found.")
+                return
+
+            data_source = link.get("data_source", "")
+            if data_source in _PAYROLL_SOURCES:
+                data = client.get_link_report(link_id)
+            elif data_source in _BANK_SOURCES:
+                data = client.get_bank_income_report(link_id)
+            else:
+                output_error(
+                    "unsupported_link_type",
+                    f"No report available for data_source={data_source!r}.",
+                )
+                return
     except AuthRequired:
         output_auth_error()
         return
