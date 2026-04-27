@@ -292,6 +292,21 @@ def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["results"][0]["provider"]["name"] == "Chase"
 
 
+@patch("mytruv_cli.commands.links.TruvClient")
+def test_links_report_renders_json(mock_cls: MagicMock, runner: CliRunner) -> None:
+    """`links report` always emits JSON; the payload shape isn't tabular."""
+    mock_cls.return_value = _mock_client(
+        "get_link_report",
+        {"income": {"employer": "Acme", "ytd_gross": "85000"}, "statements": []},
+    )
+
+    result = runner.invoke(cli, ["links", "report", "abc123"])
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["income"]["employer"] == "Acme"
+    mock_cls.return_value.get_link_report.assert_called_once_with("abc123")
+
+
 # -- Error handling --
 
 

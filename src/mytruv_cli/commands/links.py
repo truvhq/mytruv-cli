@@ -1,6 +1,6 @@
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
+from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
     OutputFormat,
     current_format,
@@ -12,16 +12,7 @@ from mytruv_cli.output.formatter import (
 )
 
 
-@click.command("links")
-@output_option
-def links_cmd() -> None:
-    """List connected financial accounts.
-
-    Shows all linked bank accounts and payroll providers with their
-    connection status and data source type.
-
-    Returns JSON: {"links": [...], "count": int}
-    """
+def _list_links() -> None:
     try:
         with TruvClient() as client:
             data = client.get_links()
@@ -47,3 +38,40 @@ def links_cmd() -> None:
         for link in links
     ]
     output_table(rows, ["link_id", "provider", "status", "data_source"], title="Connected Accounts")
+
+
+@click.group("links", invoke_without_command=True)
+@output_option
+@click.pass_context
+def links_cmd(ctx: click.Context) -> None:
+    """List connected financial accounts, or inspect them via subcommands.
+
+    Running ``mytruv links`` with no subcommand lists all connections.
+    """
+    if ctx.invoked_subcommand is None:
+        _list_links()
+
+
+@links_cmd.command("report")
+@click.argument("link_id")
+@output_option
+def report_cmd(link_id: str) -> None:
+    """Show the payroll income report for a link.
+
+    The report payload is deeply nested and not usefully tabular, so it
+    is always rendered as JSON regardless of --output.
+    """
+    try:
+        with TruvClient() as client:
+            data = client.get_link_report(link_id)
+    except AuthRequired:
+        output_auth_error()
+        return
+    except NetworkError as e:
+        output_error("network_error", str(e))
+        return
+    except APIError as e:
+        output_error(e.error, e.message)
+        return
+
+    output_json(data)
