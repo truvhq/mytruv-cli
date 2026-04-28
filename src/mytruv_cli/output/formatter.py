@@ -4,12 +4,14 @@ import json
 import os
 import sys
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import click
-from rich.console import Console
-from rich.table import Table
 
 from mytruv_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
+
+if TYPE_CHECKING:
+    from rich.console import Console
 
 
 class OutputFormat(str, Enum):
@@ -19,17 +21,22 @@ class OutputFormat(str, Enum):
 
 _format: OutputFormat | None = None
 _no_color: bool = False
+_console: "Console | None" = None
 
 
 def _env_no_color() -> bool:
     return bool(os.environ.get("NO_COLOR"))
 
 
-def _make_console() -> Console:
-    return Console(stderr=True, no_color=_no_color or _env_no_color())
+def _get_console() -> "Console":
+    """Build the stderr Console on first use. Rich is the heaviest import in the
+    CLI; deferring it keeps `--help` and other no-output paths fast."""
+    global _console  # noqa: PLW0603
+    if _console is None:
+        from rich.console import Console
 
-
-_console = _make_console()
+        _console = Console(stderr=True, no_color=_no_color or _env_no_color())
+    return _console
 
 
 def set_format(fmt: OutputFormat | None) -> None:
@@ -40,7 +47,7 @@ def set_format(fmt: OutputFormat | None) -> None:
 def set_no_color(enabled: bool) -> None:
     global _no_color, _console  # noqa: PLW0603
     _no_color = enabled
-    _console = _make_console()
+    _console = None  # rebuild on next access
 
 
 def current_format() -> OutputFormat | None:
@@ -106,12 +113,14 @@ def output_table(rows: list[dict], columns: list[str], title: str | None = None)
     """Render rows in the active output format."""
     fmt = current_format()
     if fmt is None:
+        from rich.table import Table
+
         table = Table(title=title)
         for col in columns:
             table.add_column(col)
         for row in rows:
             table.add_row(*[str(row.get(col, "")) for col in columns])
-        _console.print(table)
+        _get_console().print(table)
     elif fmt == OutputFormat.CSV:
         output_csv(rows, columns)
     else:
@@ -121,13 +130,13 @@ def output_table(rows: list[dict], columns: list[str], title: str | None = None)
 def output_info(message: str) -> None:
     """Print rich-formatted message to stderr. Skipped outside TABLE mode."""
     if is_interactive():
-        _console.print(message)
+        _get_console().print(message)
 
 
 def output_warning(message: str) -> None:
     """Emit a warning to stderr regardless of output format, so stdout stays format-consistent."""
     if is_interactive():
-        _console.print(f"[yellow]Warning:[/yellow] {message}")
+        _get_console().print(f"[yellow]Warning:[/yellow] {message}")
     else:
         print(f"Warning: {message}", file=sys.stderr)
 
@@ -135,7 +144,7 @@ def output_warning(message: str) -> None:
 def output_error(error: str, message: str, exit_code: int = EXIT_ERROR) -> None:
     """Write a structured error to stderr and exit, keeping stdout format-consistent."""
     if is_interactive():
-        _console.print(f"[red]Error:[/red] {message}")
+        _get_console().print(f"[red]Error:[/red] {message}")
     else:
         print(json.dumps({"error": error, "message": message}), file=sys.stderr)
 
@@ -153,4 +162,4 @@ def output_auth_error() -> None:
 def output_success(message: str) -> None:
     """Print success message to stderr. Skipped outside TABLE mode."""
     if is_interactive():
-        _console.print(f"[green]{message}[/green]")
+        _get_console().print(f"[green]{message}[/green]")

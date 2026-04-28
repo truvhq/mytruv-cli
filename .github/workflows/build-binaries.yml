@@ -57,10 +57,20 @@ jobs:
       - run: uv sync --frozen --all-extras
 
       - name: Build binary
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
+          # Strip leading 'v' from tag (e.g. v1.0.0 -> 1.0.0). Nuitka's --file-version
+          # only accepts numeric sequences. Falls back to 0.0.0 for non-tag builds.
+          VERSION="${REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,3}$ ]]; then
+            VERSION="0.0.0"
+          fi
           uv run python -m nuitka \
             --standalone \
             --onefile \
+            --file-version="$VERSION" \
+            --onefile-tempdir-spec='{CACHE_DIR}/mytruv/onefile-{VERSION}' \
             --output-filename="$BINARY_FILE" \
             --output-dir=dist \
             --include-package=mytruv_cli \

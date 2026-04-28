@@ -1,10 +1,12 @@
 import click
 
-from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
 from mytruv_cli.auth.store import clear_auth, is_authenticated
 from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
 from mytruv_cli.output.formatter import output_error, output_json, output_success
+
+# `mytruv_cli.auth.oauth` pulls httpx (and httpx's optional rich-based CLI shim).
+# We import it lazily inside each callback so `mytruv --help` does not pay that cost.
 
 
 @click.group("auth")
@@ -27,6 +29,8 @@ def login_cmd(no_browser: bool) -> None:
 
     Returns JSON: {"status": "authenticated"}
     """
+    from mytruv_cli.auth.oauth import OAuthError, login
+
     server_url = get_server_url()
 
     try:
@@ -60,6 +64,8 @@ def logout_cmd() -> None:
     Returns JSON: {"status": "logged_out"}
     """
     if is_authenticated():
+        from mytruv_cli.auth.oauth import revoke_token
+
         server_url = get_server_url()
         revoke_token(server_url)
 

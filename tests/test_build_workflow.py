@@ -139,6 +139,25 @@ class TestWorkflowBuildSteps:
         assert "--standalone" in build_step["run"]
         assert "--onefile" in build_step["run"]
 
+    def test_build_step_uses_persistent_onefile_cache(self, workflow):
+        """`--onefile-tempdir-spec` makes the ~89 MB extraction persist across runs.
+
+        Without it, every invocation re-extracts the payload to a fresh temp dir,
+        which adds 1-2s to startup *and* triggers macOS AMFI dylib validation.
+        Combined with --file-version, the spec uses the binary version so upgrades
+        invalidate the cache automatically.
+        """
+        steps = workflow["jobs"]["build"]["steps"]
+        build_step = next((s for s in steps if s.get("name") == "Build binary"), None)
+        assert build_step is not None, "Expected step 'Build binary' not found"
+        assert "--onefile-tempdir-spec=" in build_step["run"], (
+            "Onefile must use a persistent tempdir spec, otherwise extraction is paid every run"
+        )
+        assert "--file-version=" in build_step["run"], (
+            "--file-version is required when {VERSION} is used in --onefile-tempdir-spec; "
+            "Nuitka hard-fails the build otherwise (Options.py: 'Using value {VERSION} ... without being specified')"
+        )
+
     def test_has_smoke_test(self, workflow):
         steps = workflow["jobs"]["build"]["steps"]
         smoke_step = next((s for s in steps if s.get("name") == "Smoke test"), None)
