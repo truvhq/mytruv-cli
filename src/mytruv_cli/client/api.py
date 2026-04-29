@@ -1,7 +1,4 @@
-import httpx
-
 from mytruv_cli import __version__
-from mytruv_cli.auth.oauth import refresh_tokens
 from mytruv_cli.auth.store import get_valid_token, needs_refresh
 from mytruv_cli.config.settings import get_server_url, get_tokens
 
@@ -25,6 +22,9 @@ class APIError(Exception):
 
 class TruvClient:
     def __init__(self) -> None:
+        # httpx is the heaviest import in the CLI; deferring it keeps `--help` fast.
+        import httpx
+
         self._server_url = get_server_url()
         self._client = httpx.Client(
             base_url=self._server_url,
@@ -43,6 +43,8 @@ class TruvClient:
 
     def _get_access_token(self) -> str:
         """Get a valid access token, refreshing if needed."""
+        from mytruv_cli.auth.oauth import refresh_tokens
+
         if needs_refresh():
             new_token = refresh_tokens(self._server_url)
             if new_token:
@@ -62,6 +64,8 @@ class TruvClient:
 
     def _request(self, method: str, path: str, **kwargs: object) -> dict:
         """Make an authenticated API request with auto-retry on 401."""
+        from mytruv_cli.auth.oauth import refresh_tokens
+
         token = self._get_access_token()
         resp = self._client.request(
             method,
