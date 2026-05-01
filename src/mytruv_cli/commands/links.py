@@ -52,10 +52,6 @@ def links_cmd(ctx: click.Context) -> None:
         _list_links()
 
 
-_PAYROLL_SOURCES = {"payroll", "employer", "income"}
-_BANK_SOURCES = {"financial_accounts", "bank"}
-
-
 def _find_link(links: list, link_id: str) -> dict | None:
     for link in links:
         if link.get("id") == link_id:
@@ -84,9 +80,9 @@ def report_cmd(link_id: str) -> None:
                 return
 
             data_source = link.get("data_source", "")
-            if data_source in _PAYROLL_SOURCES:
+            if data_source == "payroll":
                 data = client.get_link_report(link_id)
-            elif data_source in _BANK_SOURCES:
+            elif data_source == "financial_accounts":
                 data = client.get_bank_income_report(link_id)
             else:
                 output_error(
