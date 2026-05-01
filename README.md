@@ -9,7 +9,7 @@ Authenticate with your MyTruv account via browser-based OAuth and query balances
 Download and run the install script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/main/scripts/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/truvhq/mytruv-cli/master/scripts/install.sh -o install.sh
 sh install.sh
 ```
 
