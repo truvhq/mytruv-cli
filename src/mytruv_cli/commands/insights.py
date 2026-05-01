@@ -1,5 +1,4 @@
 import click
-from rich.markup import escape
 
 from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
 from mytruv_cli.output.formatter import (
@@ -54,6 +53,8 @@ def insights_cmd() -> None:
     if not insights:
         output_info("No insights available.")
         return
+
+    from rich.markup import escape
 
     for item in insights:
         priority = escape((item.get("priority") or "").upper())
