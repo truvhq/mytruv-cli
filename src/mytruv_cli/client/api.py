@@ -27,9 +27,6 @@ class NetworkError(Exception):
         super().__init__(message)
 
 
-_DATE_RANGE_MAP = {"1M": "1_month", "3M": "3_months", "6M": "6_months", "1Y": "1_year", "ALL": "all"}
-
-
 def _build_transactions_params(
     *,
     from_date: str,
@@ -255,10 +252,7 @@ class TruvClient:
         return self._request(
             "GET",
             "/v2/users/balance-history",
-            params={
-                "date_range": _DATE_RANGE_MAP.get(date_range.upper(), date_range),
-                "time_period": time_period,
-            },
+            params={"date_range": date_range, "time_period": time_period},
         )
 
     def get_link_report(self, link_id: str) -> dict:
