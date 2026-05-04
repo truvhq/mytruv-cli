@@ -6,7 +6,6 @@ Authenticate with your MyTruv account via browser-based OAuth and query balances
 
 ## Install
 
-
 Download and run the install script:
 
 ```bash
