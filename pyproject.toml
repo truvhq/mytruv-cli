@@ -1,6 +1,6 @@
 [project]
 name = "mytruv"
-version = "1.1.0"
+version = "1.1.1"
 description = "CLI for accessing your MyTruv financial data"
 license = "MIT"
 requires-python = ">=3.10"
