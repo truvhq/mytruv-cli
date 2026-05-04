@@ -18,7 +18,7 @@ def test_help(runner: CliRunner) -> None:
 def test_version(runner: CliRunner) -> None:
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert "1.1.0" in result.output
 
 
 def test_unknown_command_suggests(runner: CliRunner) -> None:
@@ -47,6 +47,7 @@ def test_all_commands_registered() -> None:
         "recurring",
         "balance-history",
         "mcp",
+        "insights",
         "completion",
     }
     assert expected == set(cli.commands.keys())
