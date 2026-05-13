@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: gha-runner-1cpu1ram
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +23,7 @@ jobs:
       - run: uv run pre-commit run --all-files
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: gha-runner-1cpu1ram
     steps:
       - uses: actions/checkout@v4
 

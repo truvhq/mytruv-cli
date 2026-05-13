@@ -24,6 +24,7 @@ Prefer `spending_analysis` over `transactions` + manual summing when the questio
 
 ## Conventions
 
+
 - Dates are `YYYY-MM-DD` strings. If the user says "last month" or "this week", convert to explicit dates before calling.
 - When no range is specified, default to the last 30 days for `transactions` and `spending_analysis`.
 - Money amounts are returned as numbers in USD unless noted.
