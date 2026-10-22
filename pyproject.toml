@@ -5,6 +5,7 @@ description = "CLI for accessing your MyTruv financial data"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
+    "certifi>=2026.10.19",
     "click>=8.1",
     "httpx>=0.25",
     "tomli-w>=1.0",
