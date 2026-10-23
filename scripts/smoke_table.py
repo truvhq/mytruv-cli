@@ -10,14 +10,17 @@ Usage: python scripts/smoke_table.py path/to/binary
 import json
 import os
 import pty
+import select
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 PROVIDER_NAME = "Chase Bank ★ 日本"
+TIMEOUT_SECONDS = 60
 
 
 class _LinksHandler(BaseHTTPRequestHandler):
@@ -55,12 +58,18 @@ def main() -> int:
             stdin=subprocess.DEVNULL,
             stdout=terminal,
             stderr=terminal,
-            env={**os.environ, "MYTRUV_CONFIG_DIR": config_dir},
+            env={**os.environ, "MYTRUV_CONFIG_DIR": config_dir, "COLUMNS": "200"},
         )
         os.close(terminal)
 
         output = bytearray()
+        deadline = time.monotonic() + TIMEOUT_SECONDS
         while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select([controller], [], [], remaining)[0]:
+                output.extend(b"\n[smoke test timed out]\n")
+                process.kill()
+                break
             try:
                 chunk = os.read(controller, 4096)
             except OSError:
@@ -69,7 +78,7 @@ def main() -> int:
                 break
             output.extend(chunk)
         os.close(controller)
-        returncode = process.wait(timeout=60)
+        returncode = process.wait()
 
     server.shutdown()
     text = output.decode(errors="replace")
