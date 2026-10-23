@@ -32,7 +32,7 @@ def insights_cmd() -> None:
         output_error("network_error", str(e))
         return
     except APIError as e:
-        output_error(e.error, e.message)
+        output_error(e.error, e.message, e.exit_code)
         return
 
     status = data.get("status", "unknown")
