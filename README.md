@@ -157,8 +157,9 @@ if ! mytruv auth status | jq -e '.authenticated' > /dev/null 2>&1; then
 fi
 
 # Tell "not signed in" apart from "not Pro"
-mytruv balances > balances.json
+mytruv balances > balances.tmp
 case $? in
+    0) mv balances.tmp balances.json ;;
     2) echo "Please run: mytruv auth login" ;;
     3) echo "This account needs MyTruv Pro" ;;
 esac
