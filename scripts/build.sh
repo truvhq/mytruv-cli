@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-BINARY_NAME="mytruv"
+BINARY_NAME="money"
 
 detect_os() {
     case "$(uname -s)" in
@@ -38,10 +38,10 @@ uv run python -m nuitka \
     --onefile \
     --output-filename="${OUTPUT_NAME}" \
     --output-dir=dist \
-    --include-package=mytruv_cli \
+    --include-package=money_cli \
     --python-flag=no_site \
     --assume-yes-for-downloads \
-    src/mytruv_cli/main.py
+    src/money_cli/main.py
 
 echo ""
 echo "Build complete: dist/${OUTPUT_NAME}"

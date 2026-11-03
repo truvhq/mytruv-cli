@@ -1,7 +1,7 @@
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
-from mytruv_cli.output.formatter import (
+from money_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
+from money_cli.output.formatter import (
     OutputFormat,
     current_format,
     output_auth_error,
@@ -46,7 +46,7 @@ def _list_links() -> None:
 def links_cmd(ctx: click.Context) -> None:
     """List connected financial accounts, or inspect them via subcommands.
 
-    Running ``mytruv links`` with no subcommand lists all connections.
+    Running ``money links`` with no subcommand lists all connections.
     """
     if ctx.invoked_subcommand is None:
         _list_links()
@@ -67,7 +67,7 @@ def report_cmd(link_id: str) -> None:
 
     Dispatches to the payroll report for payroll links and the bank
     transaction-based income report for financial-account links. Find
-    link IDs via ``mytruv links``. Always rendered as JSON regardless
+    link IDs via ``money links``. Always rendered as JSON regardless
     of --output — the report payload is deeply nested and not tabular.
     """
     try:

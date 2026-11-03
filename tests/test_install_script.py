@@ -37,11 +37,11 @@ class TestInstallScriptExists:
 class TestInstallScriptConfig:
     def test_repo_url_points_to_truvhq(self):
         content = INSTALL_SCRIPT.read_text()
-        assert "truvhq/mytruv-cli" in content
+        assert "truvhq/checkrmoney-cli" in content
 
-    def test_binary_name_is_mytruv(self):
+    def test_binary_name_is_money(self):
         content = INSTALL_SCRIPT.read_text()
-        assert 'BINARY_NAME="mytruv"' in content or "BINARY_NAME='mytruv'" in content
+        assert 'BINARY_NAME="money"' in content
 
     def test_default_install_dir_is_user_local_bin(self):
         content = INSTALL_SCRIPT.read_text()
@@ -196,7 +196,7 @@ class TestInstallScriptFlow:
         assert "github.com" in content and "/releases/" in content
 
     def test_mv_source_uses_platform_qualified_name(self):
-        """After extraction, the binary is named mytruv-{os}-{arch}, not mytruv.
+        """After extraction, the binary is named money-{os}-{arch}, not money.
         The mv command must reference the ${extracted} variable."""
         content = INSTALL_SCRIPT.read_text()
 
@@ -220,10 +220,10 @@ class TestInstallScriptFlow:
             "INSTALL_DIR should use ${INSTALL_DIR:-$HOME/.local/bin} for env var override"
         )
 
-    def test_mytruv_version_overridable(self):
-        """MYTRUV_VERSION should bypass the API call."""
+    def test_money_version_overridable(self):
+        """CHECKRMONEY_VERSION, or the older MYTRUV_VERSION, should bypass the API call."""
         content = INSTALL_SCRIPT.read_text()
-        assert "MYTRUV_VERSION" in content
+        assert "CHECKRMONEY_VERSION" in content and "MYTRUV_VERSION" in content
 
     def test_github_token_supported(self):
         """GITHUB_TOKEN should be passed to the API call."""

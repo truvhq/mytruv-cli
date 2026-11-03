@@ -1,6 +1,6 @@
 """Regression guard: heavy modules must stay out of the startup import graph.
 
-`mytruv --help` ships as a Nuitka onefile binary; every transitive top-level
+`money --help` ships as a Nuitka onefile binary; every transitive top-level
 import on the help path turns into hundreds of milliseconds of dyld + AMFI
 work on macOS, which is why v1.0.0 took ~9 s to print help. The fix defers
 rich/httpx/oauth machinery until a command actually needs them.
@@ -17,13 +17,13 @@ HEAVY_MODULES = ("rich", "httpx", "http.server", "webbrowser")
 
 
 def test_help_path_does_not_load_heavy_modules() -> None:
-    """Importing mytruv_cli.main must not pull rich, httpx, http.server, or webbrowser.
+    """Importing money_cli.main must not pull rich, httpx, http.server, or webbrowser.
 
     Run in a fresh subprocess so prior test imports in this process don't pollute sys.modules.
     """
     script = textwrap.dedent(f"""
         import sys
-        import mytruv_cli.main  # noqa: F401
+        import money_cli.main  # noqa: F401
 
         heavy = {HEAVY_MODULES!r}
         loaded = [
