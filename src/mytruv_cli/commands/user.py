@@ -26,7 +26,7 @@ def user_cmd() -> None:
         output_auth_error()
         return
     except APIError as e:
-        output_error(e.error, e.message)
+        output_error(e.error, e.message, e.exit_code)
         return
 
     if current_format() == OutputFormat.JSON:

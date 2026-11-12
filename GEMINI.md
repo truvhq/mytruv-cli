@@ -4,7 +4,7 @@ Personal finance data from [MyTruv](https://mytruv.com): balances, transactions,
 
 ## Authentication
 
-The first call opens a browser for OAuth login. If any tool returns `{"error": "auth_required", ...}`, call `authenticate` once and retry the original tool. Tokens are stored locally in `~/.config/mytruv/config.toml` and refresh automatically.
+The first call opens a browser for OAuth login. If any tool returns `{"error": "auth_required", ...}`, call `authenticate` once and retry the original tool. If a tool returns `{"error": "pro_required", ...}`, do not authenticate or retry: tell the user their account needs MyTruv Pro and share the upgrade link from the message. Tokens are stored locally in `~/.config/mytruv/config.toml` and refresh automatically.
 
 ## Which tool to use
 

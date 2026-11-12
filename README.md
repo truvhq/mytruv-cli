@@ -4,6 +4,8 @@ Command-line interface for accessing your [MyTruv](https://mytruv.com) financial
 
 Authenticate with your MyTruv account via browser-based OAuth and query balances, transactions, income, spending, and more — all from the terminal.
 
+> **Requires MyTruv Pro.** The CLI and its MCP server (`mytruv mcp`) work only with a MyTruv Pro subscription or an active trial. A Free account can sign in, but every data command fails with a `pro_required` error. [Upgrade or start a free trial](https://app.mytruv.com/settings/subscription) before you install.
+
 ## Install
 
 ```bash
@@ -31,6 +33,8 @@ rm "$(command -v mytruv)"
 ```
 
 ## Quick Start
+
+Sign in with a MyTruv Pro or trial account ([upgrade here](https://app.mytruv.com/settings/subscription)).
 
 ```bash
 mytruv auth login          # authenticate via browser
@@ -92,6 +96,8 @@ mytruv completion fish | source
 |---|---|
 | `mytruv mcp` | Start MCP stdio server for AI agent integration |
 
+The MCP server needs MyTruv Pro too. On a Free account every tool returns `{"error": "pro_required", ...}`.
+
 ### Global Options
 
 | Option | Description |
@@ -118,11 +124,19 @@ mytruv is designed to be used by AI agents and scripts:
 | `0` | Success |
 | `1` | Error (API error, network error, etc.) |
 | `2` | Authentication required |
+| `3` | MyTruv Pro required |
 
 Error format (emitted on **stderr**, never on stdout):
 ```json
 {"error": "auth_required", "message": "Not authenticated. Run 'mytruv auth login' first."}
 ```
+
+Signed in to an account without MyTruv Pro (exit code `3`):
+```json
+{"error": "pro_required", "message": "The MyTruv CLI and MCP server need MyTruv Pro. Upgrade or start a free trial at https://app.mytruv.com/settings/subscription"}
+```
+
+`mytruv auth status` stays exit `0` for such an account and adds `"pro_required": true` to its JSON.
 
 ### Examples
 
@@ -141,6 +155,14 @@ if ! mytruv auth status | jq -e '.authenticated' > /dev/null 2>&1; then
     echo "Please run: mytruv auth login"
     exit 1
 fi
+
+# Tell "not signed in" apart from "not Pro"
+mytruv balances > balances.tmp
+case $? in
+    0) mv balances.tmp balances.json ;;
+    2) echo "Please run: mytruv auth login" ;;
+    3) echo "This account needs MyTruv Pro" ;;
+esac
 ```
 
 ### Interactive vs Piped
@@ -170,7 +192,7 @@ gemini extensions install https://github.com/truvhq/mytruv-cli
 ## Requirements
 
 - Python 3.10+
-- A MyTruv account with at least one connected financial account
+- A MyTruv Pro subscription or active trial ([upgrade](https://app.mytruv.com/settings/subscription)) with at least one connected financial account
 
 ## License
 

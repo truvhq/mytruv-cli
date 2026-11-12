@@ -46,7 +46,7 @@ def _fetch(fetch_fn: Callable[[TruvClient], object]) -> object:
     except NetworkError as e:
         output_error("network_error", str(e))
     except APIError as e:
-        output_error(e.error, e.message)
+        output_error(e.error, e.message, e.exit_code)
     return {}  # unreachable — output_error/output_auth_error raise SystemExit
 
 
