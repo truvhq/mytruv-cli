@@ -42,8 +42,8 @@ jobs:
         shell: bash
 
     env:
-      BINARY_NAME: mytruv-${{ matrix.platform }}-${{ matrix.arch }}
-      BINARY_FILE: mytruv-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+      BINARY_NAME: money-${{ matrix.platform }}-${{ matrix.arch }}
+      BINARY_FILE: money-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -70,13 +70,13 @@ jobs:
             --standalone \
             --onefile \
             --file-version="$VERSION" \
-            --onefile-tempdir-spec='{CACHE_DIR}/mytruv/onefile-{VERSION}' \
+            --onefile-tempdir-spec='{CACHE_DIR}/checkrmoney/onefile-{VERSION}' \
             --output-filename="$BINARY_FILE" \
             --output-dir=dist \
-            --include-package=mytruv_cli \
+            --include-package=money_cli \
             --python-flag=no_site \
             --assume-yes-for-downloads \
-            src/mytruv_cli/main.py
+            src/money_cli/main.py
 
       - name: Smoke test
         run: ./dist/"$BINARY_FILE" --help

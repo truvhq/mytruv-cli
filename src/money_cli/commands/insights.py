@@ -1,7 +1,7 @@
 import click
 
-from mytruv_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
-from mytruv_cli.output.formatter import (
+from money_cli.client.api import APIError, AuthRequired, NetworkError, TruvClient
+from money_cli.output.formatter import (
     is_interactive,
     output_auth_error,
     output_error,

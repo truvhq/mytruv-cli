@@ -1,11 +1,11 @@
 {
-  "name": "mytruv",
+  "name": "checkrmoney",
   "version": "1.0.0",
-  "description": "Personal finance — income, transactions, balances, and spending insights",
+  "description": "Money by Checkr personal finance: income, transactions, balances, and spending insights",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
-    "mytruv": {
-      "command": "mytruv",
+    "checkrmoney": {
+      "command": "money",
       "args": ["mcp"]
     }
   }

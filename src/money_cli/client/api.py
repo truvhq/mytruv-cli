@@ -1,13 +1,13 @@
-from mytruv_cli import __version__
-from mytruv_cli.auth.store import get_valid_token, needs_refresh
-from mytruv_cli.config.settings import get_server_url, get_tokens
+from money_cli import __version__
+from money_cli.auth.store import get_valid_token, needs_refresh
+from money_cli.config.settings import get_server_url, get_tokens
 
 
 class AuthRequired(Exception):
     """Raised when the user is not authenticated."""
 
     def __init__(self) -> None:
-        super().__init__("Not authenticated. Run 'mytruv auth login' first.")
+        super().__init__("Not authenticated. Run 'money auth login' first.")
 
 
 class APIError(Exception):
@@ -72,7 +72,7 @@ class TruvClient:
         self._client = httpx.Client(
             base_url=self._server_url,
             timeout=30.0,
-            headers={"User-Agent": f"mytruv/{__version__}"},
+            headers={"User-Agent": f"checkrmoney/{__version__}"},
         )
 
     def close(self) -> None:
@@ -86,7 +86,7 @@ class TruvClient:
 
     def _get_access_token(self) -> str:
         """Get a valid access token, refreshing if needed."""
-        from mytruv_cli.auth.oauth import refresh_tokens
+        from money_cli.auth.oauth import refresh_tokens
 
         if needs_refresh():
             new_token = refresh_tokens(self._server_url)
@@ -120,7 +120,7 @@ class TruvClient:
 
     def _send_with_auth(self, method: str, path: str, **kwargs: object):
         """Send an authenticated request, retrying once on 401. Raises on >=400."""
-        from mytruv_cli.auth.oauth import refresh_tokens
+        from money_cli.auth.oauth import refresh_tokens
 
         token = self._get_access_token()
         resp = self._send(method, path, token, **kwargs)

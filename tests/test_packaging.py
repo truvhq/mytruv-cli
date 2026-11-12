@@ -48,7 +48,7 @@ class TestReadmeInstallSection:
 
     def test_curl_points_to_correct_repo(self):
         content = README.read_text()
-        assert "truvhq/mytruv-cli" in content
+        assert "truvhq/checkrmoney-cli" in content
 
     def test_has_uv_alternative(self):
         content = README.read_text()
@@ -56,7 +56,7 @@ class TestReadmeInstallSection:
 
     def test_uv_install_points_to_github(self):
         content = README.read_text()
-        assert "git+https://github.com/truvhq/mytruv-cli" in content
+        assert "git+https://github.com/truvhq/checkrmoney-cli" in content
 
 
 class TestReadmeStructure:

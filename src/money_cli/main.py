@@ -3,9 +3,9 @@ import difflib
 import click
 from click.shell_completion import BashComplete, FishComplete, ZshComplete
 
-from mytruv_cli import __version__
-from mytruv_cli.commands.auth import auth_group
-from mytruv_cli.commands.data import (
+from money_cli import __version__
+from money_cli.commands.auth import auth_group
+from money_cli.commands.data import (
     balance_history_cmd,
     balances_cmd,
     income_cmd,
@@ -14,9 +14,9 @@ from mytruv_cli.commands.data import (
     spending_cmd,
     transactions_cmd,
 )
-from mytruv_cli.commands.insights import insights_cmd
-from mytruv_cli.commands.links import links_cmd
-from mytruv_cli.commands.user import user_cmd
+from money_cli.commands.insights import insights_cmd
+from money_cli.commands.links import links_cmd
+from money_cli.commands.user import user_cmd
 
 
 class _AliasGroup(click.Group):
@@ -38,24 +38,24 @@ class _AliasGroup(click.Group):
 
 
 @click.group(cls=_AliasGroup, context_settings={"max_content_width": 120, "help_option_names": ["-h", "--help"]})
-@click.version_option(version=__version__, package_name="mytruv")
+@click.version_option(version=__version__, package_name="checkrmoney")
 def cli() -> None:
-    """mytruv — Access your financial data from the command line.
+    """money: access your financial data from the command line.
 
-    Authenticate with your MyTruv account and query balances, transactions,
+    Authenticate with your Money by Checkr account and query balances, transactions,
     income, spending, and more. Output is a table in an interactive terminal,
     and JSON when piped. Use --output json|csv or --json to force a format.
 
     \b
     Get started:
-        mytruv auth login
-        mytruv balances
-        mytruv transactions --from 2025-01-01
+        money auth login
+        money balances
+        money transactions --from 2025-01-01
 
     \b
     Scripting (always JSON on stdout, exit code > 0 on error):
-        mytruv balances --json
-        mytruv transactions --from 2025-01-01 --output csv
+        money balances --json
+        money transactions --from 2025-01-01 --output csv
     """
 
 
@@ -67,9 +67,9 @@ def completion_cmd(ctx: click.Context, shell: str) -> None:
 
     \b
     Quick install:
-        bash:  echo 'source <(mytruv completion bash)' >> ~/.bashrc
-        zsh:   echo 'source <(mytruv completion zsh)' >> ~/.zshrc
-        fish:  mytruv completion fish > ~/.config/fish/completions/mytruv.fish
+        bash:  echo 'source <(money completion bash)' >> ~/.bashrc
+        zsh:   echo 'source <(money completion zsh)' >> ~/.zshrc
+        fish:  money completion fish > ~/.config/fish/completions/money.fish
     """
     prog = ctx.find_root().info_name
     complete_var = f"_{prog.upper().replace('-', '_')}_COMPLETE"
@@ -80,7 +80,7 @@ def completion_cmd(ctx: click.Context, shell: str) -> None:
 @cli.command("mcp")
 def mcp_cmd() -> None:
     """Start MCP stdio server for AI agent integration."""
-    from mytruv_cli.mcp_server import run_server
+    from money_cli.mcp_server import run_server
 
     run_server()
 

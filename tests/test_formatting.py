@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from mytruv_cli.commands.data import _fmt_dollar, _fmt_pct
-from mytruv_cli.main import cli
+from money_cli.commands.data import _fmt_dollar, _fmt_pct
+from money_cli.main import cli
 
 
 def test_fmt_dollar() -> None:
@@ -58,7 +58,7 @@ def _mock_balances_client() -> MagicMock:
     return mock
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_output_json_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_balances_client()
     result = runner.invoke(cli, ["balances", "--output", "json"])
@@ -67,7 +67,7 @@ def test_output_json_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["total_accounts"] == 1
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_output_csv_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_balances_client()
     result = runner.invoke(cli, ["balances", "--output", "csv"])
@@ -77,7 +77,7 @@ def test_output_csv_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert "CHECKING" in lines[1]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_json_shorthand(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_balances_client()
     result = runner.invoke(cli, ["balances", "--json"])
@@ -85,18 +85,18 @@ def test_json_shorthand(mock_cls: MagicMock, runner: CliRunner) -> None:
     json.loads(result.output)
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_no_color_flag(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_balances_client()
     result = runner.invoke(cli, ["balances", "--no-color", "--json"])
     assert result.exit_code == 0
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_no_color_env(mock_cls: MagicMock, runner: CliRunner, monkeypatch) -> None:
     """NO_COLOR env var must disable ANSI colors without requiring --no-color."""
     monkeypatch.setenv("NO_COLOR", "1")
-    from mytruv_cli.output import formatter
+    from money_cli.output import formatter
 
     # Re-evaluate console after env change so the test reflects real startup order.
     formatter.set_no_color(False)
@@ -109,7 +109,7 @@ def test_no_color_env(mock_cls: MagicMock, runner: CliRunner, monkeypatch) -> No
 
 def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> None:
     """Each @output_option invocation must reset module state so earlier flags don't persist."""
-    with patch("mytruv_cli.commands.data.TruvClient") as mock_cls:
+    with patch("money_cli.commands.data.TruvClient") as mock_cls:
         mock_cls.return_value = _mock_balances_client()
         # First call sets format=CSV.
         csv_result = runner.invoke(cli, ["balances", "--output", "csv"])
@@ -123,7 +123,7 @@ def test_format_state_does_not_leak_between_invocations(runner: CliRunner) -> No
         json.loads(default_result.output)  # valid JSON, not CSV
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_liabilities_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
     """--output csv on an empty result must still emit CSV (header-only), not fall back to JSON."""
     mock = MagicMock()
@@ -138,7 +138,7 @@ def test_liabilities_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner)
     assert lines == ["account,balance,available"]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_income_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = MagicMock()
     mock.get_income.return_value = {"employments": []}
@@ -152,7 +152,7 @@ def test_income_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> N
     assert lines == ["employer,source,pay_date,gross_pay,net_pay"]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_recurring_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = MagicMock()
     mock.get_recurring.return_value = {"recurring_transactions": {"outflows": [], "inflows": []}}
@@ -166,7 +166,7 @@ def test_recurring_csv_empty_stays_csv(mock_cls: MagicMock, runner: CliRunner) -
     assert lines == ["direction,name,amount,status,last,next"]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_run_csv_falls_back_to_empty_csv_on_unexpected_shape(mock_cls: MagicMock, runner: CliRunner) -> None:
     """_run-based commands must stay in CSV when the API returns a non-list for table_key."""
     mock = MagicMock()
@@ -182,7 +182,7 @@ def test_run_csv_falls_back_to_empty_csv_on_unexpected_shape(mock_cls: MagicMock
     assert lines == ["type,currency,balance,available,accounts"]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_paginated_json_does_not_flag_truncated(mock_cls: MagicMock, runner: CliRunner) -> None:
     """When the user paginates intentionally, JSON output must not flag truncated=True."""
     mock_cls.return_value = _make_transactions_client(count=50, rows=10)
@@ -192,7 +192,7 @@ def test_transactions_paginated_json_does_not_flag_truncated(mock_cls: MagicMock
     assert "truncated" not in data
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_unpaginated_json_flags_truncated(mock_cls: MagicMock, runner: CliRunner) -> None:
     """Without --page, a capped response must still set truncated=True for JSON consumers."""
     mock_cls.return_value = _make_transactions_client(count=50, rows=10)
