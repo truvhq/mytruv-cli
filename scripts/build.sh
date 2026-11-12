@@ -39,6 +39,7 @@ uv run python -m nuitka \
     --output-filename="${OUTPUT_NAME}" \
     --output-dir=dist \
     --include-package=mytruv_cli \
+    --include-package=rich._unicode_data \
     --python-flag=no_site \
     --assume-yes-for-downloads \
     src/mytruv_cli/main.py
@@ -57,3 +58,5 @@ case "$help_output" in
        echo "Got: $help_output" >&2
        exit 1 ;;
 esac
+
+uv run python scripts/smoke_table.py "./dist/${OUTPUT_NAME}"
