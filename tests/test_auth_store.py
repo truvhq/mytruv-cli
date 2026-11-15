@@ -4,13 +4,13 @@ import time
 
 import pytest
 
-from mytruv_cli.auth.store import clear_auth, get_valid_token, is_authenticated, needs_refresh
-from mytruv_cli.config.settings import set_tokens
+from money_cli.auth.store import clear_auth, get_valid_token, is_authenticated, needs_refresh
+from money_cli.config.settings import set_tokens
 
 
 @pytest.fixture(autouse=True)
 def _isolated_config(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MYTRUV_CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("CHECKRMONEY_CONFIG_DIR", str(tmp_path))
 
 
 def test_not_authenticated_when_no_tokens() -> None:

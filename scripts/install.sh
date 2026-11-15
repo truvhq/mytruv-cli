@@ -1,8 +1,9 @@
 #!/bin/sh
 set -e
 
-REPO="truvhq/mytruv-cli"
-BINARY_NAME="mytruv"
+REPO="truvhq/checkrmoney-cli"
+BINARY_NAME="money"
+LEGACY_BINARY_NAME="mytruv"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Validate INSTALL_DIR is an absolute path
@@ -28,13 +29,13 @@ main() {
         fi
     fi
 
-    version="${MYTRUV_VERSION:-}"
+    version="${CHECKRMONEY_VERSION:-${MYTRUV_VERSION:-}}"
     if [ -z "$version" ]; then
         version=$(get_latest_version) || true
     fi
     if [ -z "$version" ]; then
         echo "Error: could not determine latest version." >&2
-        echo "Set MYTRUV_VERSION=vX.Y.Z or GITHUB_TOKEN to work around GitHub API rate limits." >&2
+        echo "Set CHECKRMONEY_VERSION=vX.Y.Z or GITHUB_TOKEN to work around GitHub API rate limits." >&2
         exit 1
     fi
 
@@ -76,12 +77,29 @@ main() {
         sudo chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
     fi
 
+    # Keep the legacy command working for existing installs.
+    legacy="${INSTALL_DIR}/${LEGACY_BINARY_NAME}"
+    if [ -f "$legacy" ] && [ ! -L "$legacy" ]; then
+        echo "Replacing ${LEGACY_BINARY_NAME} with a link to ${BINARY_NAME}..."
+        if [ -w "$INSTALL_DIR" ]; then
+            ln -sf "${BINARY_NAME}" "$legacy"
+        else
+            sudo ln -sf "${BINARY_NAME}" "$legacy"
+        fi
+    fi
+
     echo ""
     echo "${BINARY_NAME} ${version} installed successfully!"
 
     case ":$PATH:" in
         *":$INSTALL_DIR:"*)
-            echo "Run '${BINARY_NAME} --help' to get started."
+            found=$(command -v "$BINARY_NAME" 2>/dev/null || true)
+            if [ -n "$found" ] && [ "$found" != "${INSTALL_DIR}/${BINARY_NAME}" ]; then
+                echo "Note: another '${BINARY_NAME}' at ${found} comes first on your PATH."
+                echo "Run ${INSTALL_DIR}/${BINARY_NAME} directly, or move ${INSTALL_DIR} earlier in PATH."
+            else
+                echo "Run '${BINARY_NAME} --help' to get started."
+            fi
             ;;
         *)
             echo "Note: ${INSTALL_DIR} is not on your PATH. Add this line to your shell profile"

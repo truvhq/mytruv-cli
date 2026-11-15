@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import click
 
-from mytruv_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
+from money_cli.config.constants import EXIT_AUTH_REQUIRED, EXIT_ERROR
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -154,7 +154,7 @@ def output_error(error: str, message: str, exit_code: int = EXIT_ERROR) -> None:
 def output_auth_error() -> None:
     output_error(
         "auth_required",
-        "Not authenticated. Run 'mytruv auth login' first.",
+        "Not authenticated. Run 'money auth login' first.",
         exit_code=EXIT_AUTH_REQUIRED,
     )
 

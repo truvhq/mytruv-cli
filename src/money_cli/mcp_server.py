@@ -1,14 +1,14 @@
-"""MCP stdio server exposing MyTruv financial data as tools."""
+"""MCP stdio server exposing Money by Checkr financial data as tools."""
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
-from mytruv_cli.auth.oauth import OAuthError, login, revoke_token
-from mytruv_cli.auth.store import clear_auth, get_valid_token, is_authenticated
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
-from mytruv_cli.config.settings import get_server_url
+from money_cli.auth.oauth import OAuthError, login, revoke_token
+from money_cli.auth.store import clear_auth, get_valid_token, is_authenticated
+from money_cli.client.api import APIError, AuthRequired, TruvClient
+from money_cli.config.settings import get_server_url
 
-mcp = FastMCP("MyTruv")
+mcp = FastMCP("Money by Checkr")
 
 _ANNOTATIONS = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 _AUTH_ANNOTATIONS = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -28,7 +28,7 @@ def _call(fn_name: str, **kwargs: object) -> dict:
 
 @mcp.tool(annotations=_AUTH_ANNOTATIONS)
 def authenticate() -> dict:
-    """Log in to MyTruv by opening the browser for OAuth authentication.
+    """Log in to Money by Checkr by opening the browser for OAuth authentication.
 
     Call this when other tools return an 'auth_required' error.
     Opens the default browser for the user to sign in, then stores credentials locally.
@@ -45,7 +45,7 @@ def authenticate() -> dict:
 
 @mcp.tool(annotations=_AUTH_ANNOTATIONS)
 def logout() -> dict:
-    """Log out and clear stored MyTruv credentials.
+    """Log out and clear stored Money by Checkr credentials.
 
     Revokes tokens server-side (best-effort) and removes local credentials.
     Safe to call when already logged out.

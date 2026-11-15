@@ -11,8 +11,8 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 
-from mytruv_cli.config.constants import CALLBACK_PORT, CLIENT_NAME
-from mytruv_cli.config.settings import (
+from money_cli.config.constants import CALLBACK_PORT, CLIENT_NAME
+from money_cli.config.settings import (
     get_client_credentials,
     get_tokens,
     set_client_credentials,
@@ -75,7 +75,7 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
 
 def _html_page(heading: str, body: str, *, color: str = "#16a34a") -> str:
     return f"""<!DOCTYPE html>
-<html><head><title>mytruv</title><style>
+<html><head><title>Money by Checkr</title><style>
 body{{font-family:system-ui,sans-serif;display:flex;justify-content:center;align-items:center;
 min-height:100vh;margin:0;background:#f8f9fa;color:#1a1a2e}}
 .card{{text-align:center;padding:3rem;border-radius:12px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08)}}
@@ -198,7 +198,8 @@ def login(server_url: str, *, no_browser: bool = False) -> dict:
     if not _CallbackHandler.received.wait(timeout=_CALLBACK_TIMEOUT):
         server.server_close()
         raise OAuthError(
-            "timeout", f"Authentication timed out after {_CALLBACK_TIMEOUT}s. Run 'mytruv auth login' to try again."
+            "timeout",
+            f"Authentication timed out after {_CALLBACK_TIMEOUT}s. Run 'money auth login' to try again.",
         )
 
     server.server_close()

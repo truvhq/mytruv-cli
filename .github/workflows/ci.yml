@@ -39,5 +39,5 @@ jobs:
 
       - name: CLI smoke test
         run: |
-          uv run mytruv --help
-          uv run mytruv auth --help
+          uv run money --help
+          uv run money auth --help

@@ -11,11 +11,19 @@ except ImportError:
 import tomli as tomllib
 import tomli_w
 
-from mytruv_cli.config.constants import DEFAULT_SERVER_URL
+from money_cli.config.constants import DEFAULT_SERVER_URL
 
 
 def config_dir() -> Path:
-    return Path(os.environ.get("MYTRUV_CONFIG_DIR", Path.home() / ".config" / "mytruv"))
+    override = os.environ.get("CHECKRMONEY_CONFIG_DIR") or os.environ.get("MYTRUV_CONFIG_DIR")
+    if override:
+        return Path(override)
+    default = Path.home() / ".config" / "checkrmoney"
+    # Existing installs keep their sign-in in the legacy folder.
+    legacy = Path.home() / ".config" / "mytruv"
+    if not default.exists() and legacy.exists():
+        return legacy
+    return default
 
 
 def config_path() -> Path:

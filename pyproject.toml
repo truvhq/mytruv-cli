@@ -1,7 +1,7 @@
 [project]
-name = "mytruv"
+name = "checkrmoney"
 version = "1.1.2"
-description = "CLI for accessing your MyTruv financial data"
+description = "CLI for accessing your Money by Checkr financial data"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
@@ -26,14 +26,14 @@ dev = [
 ]
 
 [project.scripts]
-mytruv = "mytruv_cli.main:cli"
+money = "money_cli.main:cli"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mytruv_cli"]
+packages = ["src/money_cli"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

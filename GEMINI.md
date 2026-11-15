@@ -1,10 +1,10 @@
-# mytruv — Gemini CLI extension
+# money: Gemini CLI extension
 
-Personal finance data from [MyTruv](https://mytruv.com): balances, transactions, income, spending, and recurring charges for the authenticated user. All tools are read-only.
+Personal finance data from [Money by Checkr](https://checkrmoney.com): balances, transactions, income, spending, and recurring charges for the authenticated user. All tools are read-only.
 
 ## Authentication
 
-The first call opens a browser for OAuth login. If any tool returns `{"error": "auth_required", ...}`, call `authenticate` once and retry the original tool. Tokens are stored locally in `~/.config/mytruv/config.toml` and refresh automatically.
+The first call opens a browser for OAuth login. If any tool returns `{"error": "auth_required", ...}`, call `authenticate` once and retry the original tool. Tokens are stored locally in `~/.config/checkrmoney/config.toml` and refresh automatically.
 
 ## Which tool to use
 
@@ -31,4 +31,4 @@ Prefer `spending_analysis` over `transactions` + manual summing when the questio
 
 ## Privacy
 
-This extension only reads the signed-in user's own financial data via the MyTruv API. Nothing is written, and data isn't shared beyond what Gemini shows the user in the current session.
+This extension only reads the signed-in user's own financial data via the Money by Checkr API. Nothing is written, and data isn't shared beyond what Gemini shows the user in the current session.
