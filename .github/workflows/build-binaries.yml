@@ -74,12 +74,17 @@ jobs:
             --output-filename="$BINARY_FILE" \
             --output-dir=dist \
             --include-package=mytruv_cli \
+            --include-package=rich._unicode_data \
             --python-flag=no_site \
             --assume-yes-for-downloads \
             src/mytruv_cli/main.py
 
       - name: Smoke test
         run: ./dist/"$BINARY_FILE" --help
+
+      - name: Smoke test table output
+        if: matrix.platform != 'windows'
+        run: python scripts/smoke_table.py ./dist/"$BINARY_FILE"
 
       - name: Create archive
         run: |
