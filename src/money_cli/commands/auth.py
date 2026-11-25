@@ -1,17 +1,17 @@
 import click
 
-from mytruv_cli.auth.store import clear_auth, is_authenticated
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
-from mytruv_cli.config.settings import get_server_url
-from mytruv_cli.output.formatter import output_error, output_json, output_success
+from money_cli.auth.store import clear_auth, is_authenticated
+from money_cli.client.api import APIError, AuthRequired, TruvClient
+from money_cli.config.settings import get_server_url
+from money_cli.output.formatter import output_error, output_json, output_success
 
-# `mytruv_cli.auth.oauth` pulls httpx (and httpx's optional rich-based CLI shim).
-# We import it lazily inside each callback so `mytruv --help` does not pay that cost.
+# `money_cli.auth.oauth` pulls httpx (and httpx's optional rich-based CLI shim).
+# We import it lazily inside each callback so `money --help` does not pay that cost.
 
 
 @click.group("auth")
 def auth_group() -> None:
-    """Authenticate with your MyTruv account.
+    """Authenticate with your Money by Checkr account.
 
     Login opens a browser window for secure OAuth authentication.
     Tokens are stored locally and refreshed automatically.
@@ -23,13 +23,13 @@ def auth_group() -> None:
 def login_cmd(no_browser: bool) -> None:
     """Authenticate via browser-based OAuth login.
 
-    Opens your default browser to the MyTruv login page.
+    Opens your default browser to the Money by Checkr login page.
     After logging in, the CLI stores tokens locally for subsequent commands.
     Use --no-browser to get a URL you can open manually (useful for remote/headless machines).
 
     Returns JSON: {"status": "authenticated"}
     """
-    from mytruv_cli.auth.oauth import OAuthError, login
+    from money_cli.auth.oauth import OAuthError, login
 
     server_url = get_server_url()
 
@@ -64,7 +64,7 @@ def logout_cmd() -> None:
     Returns JSON: {"status": "logged_out"}
     """
     if is_authenticated():
-        from mytruv_cli.auth.oauth import revoke_token
+        from money_cli.auth.oauth import revoke_token
 
         server_url = get_server_url()
         revoke_token(server_url)

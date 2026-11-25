@@ -7,12 +7,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from mytruv_cli.main import cli
+from money_cli.main import cli
 
 
 @pytest.fixture(autouse=True)
 def _isolated_config(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MYTRUV_CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("CHECKRMONEY_CONFIG_DIR", str(tmp_path))
 
 
 def _mock_client(method: str, return_value: dict) -> MagicMock:
@@ -60,7 +60,7 @@ def test_auth_commands_reject_format_flags(runner: CliRunner) -> None:
 # -- Data commands (mocked client) --
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_balances",
@@ -85,7 +85,7 @@ def test_balances_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["aggregated_balances"][0]["type"] == "CHECKING"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_transactions",
@@ -110,7 +110,7 @@ def test_transactions_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["transactions"][0]["description"] == "Coffee"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_spending_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_spending",
@@ -147,7 +147,7 @@ def test_spending_days_invalid(days_arg: str, runner: CliRunner) -> None:
     assert "invalid" in result.output.lower() or "error" in result.output.lower()
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_spending_days_default_time_period(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
@@ -157,7 +157,7 @@ def test_spending_days_default_time_period(mock_cls: MagicMock, runner: CliRunne
     assert call_kwargs["start_date"] == expected
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_spending_days_default_other_group_by(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
@@ -167,7 +167,7 @@ def test_spending_days_default_other_group_by(mock_cls: MagicMock, runner: CliRu
     assert call_kwargs["start_date"] == expected
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_spending_days_explicit_overrides_time_period_default(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_spending", {"spending": {}, "summary": {}})
     mock_cls.return_value = mock
@@ -177,7 +177,7 @@ def test_spending_days_explicit_overrides_time_period_default(mock_cls: MagicMoc
     assert call_kwargs["start_date"] == expected
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_income",
@@ -200,7 +200,7 @@ def test_income_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["employments"][0]["company"]["name"] == "Acme"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_recurring",
@@ -227,7 +227,7 @@ def test_recurring_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["recurring_transactions"]["outflows"][0]["source_name"] == "Netflix"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_balance_history",
@@ -250,7 +250,7 @@ def test_balance_history_json(mock_cls: MagicMock, runner: CliRunner) -> None:
 # -- User and links --
 
 
-@patch("mytruv_cli.commands.user.TruvClient")
+@patch("money_cli.commands.user.TruvClient")
 def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_user",
@@ -268,7 +268,7 @@ def test_user_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["email"] == "jane@example.com"
 
 
-@patch("mytruv_cli.commands.links.TruvClient")
+@patch("money_cli.commands.links.TruvClient")
 def test_links_json(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_links",
@@ -303,7 +303,7 @@ def _mock_links_client(links: list, **report_returns: dict) -> MagicMock:
     return mock
 
 
-@patch("mytruv_cli.commands.links.TruvClient")
+@patch("money_cli.commands.links.TruvClient")
 def test_links_report_payroll(mock_cls: MagicMock, runner: CliRunner) -> None:
     """Payroll links route to /v1/links/{id}/report."""
     mock = _mock_links_client(
@@ -319,7 +319,7 @@ def test_links_report_payroll(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock.get_bank_income_report.assert_not_called()
 
 
-@patch("mytruv_cli.commands.links.TruvClient")
+@patch("money_cli.commands.links.TruvClient")
 def test_links_report_bank(mock_cls: MagicMock, runner: CliRunner) -> None:
     """Bank links route to /v1/links/{id}/income/transactions/reports."""
     mock = _mock_links_client(
@@ -335,7 +335,7 @@ def test_links_report_bank(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock.get_link_report.assert_not_called()
 
 
-@patch("mytruv_cli.commands.links.TruvClient")
+@patch("money_cli.commands.links.TruvClient")
 def test_links_report_unknown_id(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_links_client([{"id": "p1", "data_source": "payroll"}])
 
@@ -348,9 +348,9 @@ def test_links_report_unknown_id(mock_cls: MagicMock, runner: CliRunner) -> None
 # -- Error handling --
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
-    from mytruv_cli.client.api import AuthRequired
+    from money_cli.client.api import AuthRequired
 
     mock_cls.return_value = _mock_client_error("get_balances", AuthRequired())
 
@@ -361,9 +361,9 @@ def test_auth_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["error"] == "auth_required"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
-    from mytruv_cli.client.api import APIError
+    from money_cli.client.api import APIError
 
     mock_cls.return_value = _mock_client_error("get_balances", APIError(404, "not_found", "No data found"))
 
@@ -375,9 +375,9 @@ def test_api_error(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert data["message"] == "No data found"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_network_error(mock_cls: MagicMock, runner: CliRunner) -> None:
-    from mytruv_cli.client.api import NetworkError
+    from money_cli.client.api import NetworkError
 
     mock_cls.return_value = _mock_client_error("get_balances", NetworkError("Network error: connection refused"))
 
@@ -388,10 +388,10 @@ def test_network_error(mock_cls: MagicMock, runner: CliRunner) -> None:
     assert "connection refused" in data["message"]
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_csv_error_keeps_stdout_clean(mock_cls: MagicMock, runner: CliRunner) -> None:
     """--output csv must not leak a JSON error onto stdout — pipelines rely on a consistent data channel."""
-    from mytruv_cli.client.api import APIError
+    from money_cli.client.api import APIError
 
     mock_cls.return_value = _mock_client_error("get_balances", APIError(500, "server_error", "boom"))
 
@@ -405,7 +405,7 @@ def test_csv_error_keeps_stdout_clean(mock_cls: MagicMock, runner: CliRunner) ->
 # -- Transactions v2 filters --
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_passes_v2_filters(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_transactions", {"count": 0, "transactions": []})
     mock_cls.return_value = mock
@@ -438,7 +438,7 @@ def test_transactions_passes_v2_filters(mock_cls: MagicMock, runner: CliRunner) 
     assert kwargs["sort_order"] == "asc"
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_csv_streams_server_export(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = MagicMock()
     mock.export_transactions_csv.return_value = b"date,amount\n2026-01-01,-5.50\n"
@@ -453,7 +453,7 @@ def test_transactions_csv_streams_server_export(mock_cls: MagicMock, runner: Cli
     mock.get_transactions.assert_not_called()
 
 
-@patch("mytruv_cli.commands.data.TruvClient")
+@patch("money_cli.commands.data.TruvClient")
 def test_transactions_categories_legacy_alias(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock = _mock_client("get_transactions", {"count": 0, "transactions": []})
     mock_cls.return_value = mock
@@ -466,7 +466,7 @@ def test_transactions_categories_legacy_alias(mock_cls: MagicMock, runner: CliRu
 # -- Insights --
 
 
-@patch("mytruv_cli.commands.insights.TruvClient")
+@patch("money_cli.commands.insights.TruvClient")
 def test_insights_in_progress_exits_zero(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client("get_insights", {"status": "in_progress", "insights": []})
 
@@ -476,7 +476,7 @@ def test_insights_in_progress_exits_zero(mock_cls: MagicMock, runner: CliRunner)
     assert data["status"] == "in_progress"
 
 
-@patch("mytruv_cli.commands.insights.TruvClient")
+@patch("money_cli.commands.insights.TruvClient")
 def test_insights_completed(mock_cls: MagicMock, runner: CliRunner) -> None:
     mock_cls.return_value = _mock_client(
         "get_insights",

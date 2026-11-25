@@ -4,8 +4,9 @@ import os
 
 import pytest
 
-from mytruv_cli.config.settings import (
+from money_cli.config.settings import (
     clear_tokens,
+    config_dir,
     config_path,
     get_client_credentials,
     get_server_url,
@@ -17,11 +18,11 @@ from mytruv_cli.config.settings import (
 
 @pytest.fixture(autouse=True)
 def _isolated_config(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MYTRUV_CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("CHECKRMONEY_CONFIG_DIR", str(tmp_path))
 
 
 def test_default_server_url() -> None:
-    assert get_server_url() == "https://api.mytruv.com"
+    assert get_server_url() == "https://api.checkrmoney.com"
 
 
 def test_tokens_roundtrip() -> None:
@@ -68,3 +69,28 @@ def test_custom_server_url(tmp_path) -> None:
         tomli_w.dump({"server_url": "https://custom.example.com"}, f)
 
     assert get_server_url() == "https://custom.example.com"
+
+
+class TestConfigDir:
+    @pytest.fixture(autouse=True)
+    def _home(self, tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("CHECKRMONEY_CONFIG_DIR", raising=False)
+        monkeypatch.delenv("MYTRUV_CONFIG_DIR", raising=False)
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+    def test_defaults_to_new_folder(self, tmp_path) -> None:
+        assert config_dir() == tmp_path / ".config" / "checkrmoney"
+
+    def test_existing_legacy_folder_used_until_new_one_exists(self, tmp_path) -> None:
+        (tmp_path / ".config" / "mytruv").mkdir(parents=True)
+        assert config_dir() == tmp_path / ".config" / "mytruv"
+
+        (tmp_path / ".config" / "checkrmoney").mkdir(parents=True)
+        assert config_dir() == tmp_path / ".config" / "checkrmoney"
+
+    def test_env_override_prefers_new_variable(self, tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("MYTRUV_CONFIG_DIR", str(tmp_path / "old"))
+        assert config_dir() == tmp_path / "old"
+
+        monkeypatch.setenv("CHECKRMONEY_CONFIG_DIR", str(tmp_path / "new"))
+        assert config_dir() == tmp_path / "new"

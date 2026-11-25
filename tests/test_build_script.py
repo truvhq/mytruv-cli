@@ -26,9 +26,9 @@ class TestBuildScriptExists:
 
 
 class TestBuildScriptConfig:
-    def test_binary_name_is_mytruv(self):
+    def test_binary_name_is_money(self):
         content = BUILD_SCRIPT.read_text()
-        assert "mytruv" in content
+        assert 'BINARY_NAME="money"' in content
 
     def test_output_dir_is_dist(self):
         content = BUILD_SCRIPT.read_text()
@@ -73,18 +73,18 @@ class TestBuildScriptUsesNuitka:
         assert "--standalone" in content
         assert "--onefile" in content
 
-    def test_includes_mytruv_cli_package(self):
+    def test_includes_money_cli_package(self):
         content = BUILD_SCRIPT.read_text()
-        assert "mytruv_cli" in content
+        assert "money_cli" in content
 
     def test_targets_main_entry_point(self):
         content = BUILD_SCRIPT.read_text()
-        assert "src/mytruv_cli/main.py" in content
+        assert "src/money_cli/main.py" in content
 
 
 class TestBuildScriptOutputNaming:
     def test_output_name_includes_os_and_arch(self):
-        """Binary name should follow pattern: mytruv-{os}-{arch}"""
+        """Binary name should follow pattern: money-{os}-{arch}"""
         content = BUILD_SCRIPT.read_text()
         # Script should compose output name from OS and ARCH variables
         assert "OS" in content and "ARCH" in content

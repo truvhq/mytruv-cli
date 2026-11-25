@@ -135,6 +135,50 @@ wheels = [
 ]
 
 [[package]]
+name = "checkrmoney"
+version = "1.1.2"
+source = { editable = "." }
+dependencies = [
+    { name = "certifi" },
+    { name = "click" },
+    { name = "httpx" },
+    { name = "mcp" },
+    { name = "rich" },
+    { name = "tomli" },
+    { name = "tomli-w" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "nuitka" },
+    { name = "ordered-set" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pyyaml" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "certifi", specifier = ">=2026.10.19" },
+    { name = "click", specifier = ">=8.1" },
+    { name = "httpx", specifier = ">=0.25" },
+    { name = "mcp", specifier = ">=1.0,<2" },
+    { name = "nuitka", marker = "extra == 'dev'", specifier = ">=2.0" },
+    { name = "ordered-set", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=13.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
+    { name = "tomli", specifier = ">=2.0" },
+    { name = "tomli-w", specifier = ">=1.0" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "click"
 version = "8.3.3"
 source = { registry = "https://pypi.org/simple" }
@@ -508,50 +552,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
-
-[[package]]
-name = "mytruv"
-version = "1.1.2"
-source = { editable = "." }
-dependencies = [
-    { name = "certifi" },
-    { name = "click" },
-    { name = "httpx" },
-    { name = "mcp" },
-    { name = "rich" },
-    { name = "tomli" },
-    { name = "tomli-w" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "nuitka" },
-    { name = "ordered-set" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pyyaml" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "click", specifier = ">=8.1" },
-    { name = "httpx", specifier = ">=0.25" },
-    { name = "mcp", specifier = ">=1.0,<2" },
-    { name = "nuitka", marker = "extra == 'dev'", specifier = ">=2.0" },
-    { name = "ordered-set", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
-    { name = "tomli", specifier = ">=2.0" },
-    { name = "tomli-w", specifier = ">=1.0" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "nodeenv"
