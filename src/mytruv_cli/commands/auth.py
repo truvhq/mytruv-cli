@@ -1,9 +1,9 @@
 import click
 
 from mytruv_cli.auth.store import clear_auth, is_authenticated
-from mytruv_cli.client.api import APIError, AuthRequired, TruvClient
+from mytruv_cli.client.api import APIError, AuthRequired, ProRequired, TruvClient
 from mytruv_cli.config.settings import get_server_url
-from mytruv_cli.output.formatter import output_error, output_json, output_success
+from mytruv_cli.output.formatter import output_error, output_json, output_success, output_warning
 
 # `mytruv_cli.auth.oauth` pulls httpx (and httpx's optional rich-based CLI shim).
 # We import it lazily inside each callback so `mytruv --help` does not pay that cost.
@@ -48,6 +48,8 @@ def login_cmd(no_browser: bool) -> None:
             "first_name": user.get("first_name"),
             "last_name": user.get("last_name"),
         }
+    except ProRequired as e:
+        output_error(e.error, e.message, e.exit_code)
     except (AuthRequired, APIError):
         pass
 
@@ -79,7 +81,8 @@ def logout_cmd() -> None:
 def status_cmd() -> None:
     """Show current authentication status.
 
-    Returns JSON: {"authenticated": bool, "user": {...} | null}
+    Returns JSON: {"authenticated": bool, "user": {...} | null}, plus "pro_required": true
+    when signed in to an account without MyTruv Pro.
     """
     if not is_authenticated():
         output_json({"authenticated": False, "user": None})
@@ -95,6 +98,9 @@ def status_cmd() -> None:
             "first_name": user.get("first_name"),
             "last_name": user.get("last_name"),
         }
+    except ProRequired as e:
+        result["pro_required"] = True
+        output_warning(e.message)
     except (AuthRequired, APIError):
         result["authenticated"] = False
 

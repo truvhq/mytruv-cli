@@ -1,5 +1,6 @@
 from mytruv_cli import __version__
 from mytruv_cli.auth.store import get_valid_token, needs_refresh
+from mytruv_cli.config.constants import EXIT_ERROR, EXIT_PRO_REQUIRED, UPGRADE_URL
 from mytruv_cli.config.settings import get_server_url, get_tokens
 
 
@@ -13,11 +14,26 @@ class AuthRequired(Exception):
 class APIError(Exception):
     """Raised when the API returns a non-success response."""
 
+    exit_code = EXIT_ERROR
+
     def __init__(self, status_code: int, error: str, message: str) -> None:
         self.status_code = status_code
         self.error = error
         self.message = message
         super().__init__(message)
+
+
+class ProRequired(APIError):
+    """Raised when the account has no MyTruv Pro access (HTTP 402)."""
+
+    exit_code = EXIT_PRO_REQUIRED
+
+    def __init__(self) -> None:
+        super().__init__(
+            402,
+            "pro_required",
+            f"The MyTruv CLI and MCP server need MyTruv Pro. Upgrade or start a free trial at {UPGRADE_URL}",
+        )
 
 
 class NetworkError(Exception):
@@ -132,6 +148,9 @@ class TruvClient:
 
         if resp.status_code == 401:
             raise AuthRequired
+
+        if resp.status_code == 402:
+            raise ProRequired
 
         if resp.status_code >= 400:
             error = "api_error"

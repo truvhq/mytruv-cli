@@ -402,6 +402,69 @@ def test_csv_error_keeps_stdout_clean(mock_cls: MagicMock, runner: CliRunner) ->
     assert data["error"] == "server_error"
 
 
+@patch("mytruv_cli.commands.data.TruvClient")
+def test_pro_required_error(mock_cls: MagicMock, runner: CliRunner) -> None:
+    from mytruv_cli.client.api import ProRequired
+
+    mock_cls.return_value = _mock_client_error("get_balances", ProRequired())
+
+    result = runner.invoke(cli, ["balances", "--json"])
+    assert result.exit_code == 3
+    assert result.stdout == ""
+    data = json.loads(result.stderr)
+    assert data["error"] == "pro_required"
+    assert "https://app.mytruv.com/settings/subscription" in data["message"]
+
+
+def test_client_raises_pro_required_on_402() -> None:
+    from mytruv_cli.client.api import ProRequired, TruvClient
+
+    client = TruvClient()
+    client._get_access_token = MagicMock(return_value="token")
+    client._client.request = MagicMock(return_value=MagicMock(status_code=402))
+
+    with pytest.raises(ProRequired):
+        client.get_user()
+
+
+@patch("mytruv_cli.commands.auth.TruvClient")
+@patch("mytruv_cli.commands.auth.is_authenticated", return_value=True)
+def test_auth_status_pro_required(_auth: MagicMock, mock_cls: MagicMock, runner: CliRunner) -> None:
+    from mytruv_cli.client.api import ProRequired
+
+    mock_cls.return_value = _mock_client_error("get_user", ProRequired())
+
+    result = runner.invoke(cli, ["auth", "status"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["authenticated"] is True
+    assert data["pro_required"] is True
+
+
+@patch("mytruv_cli.commands.auth.TruvClient")
+@patch("mytruv_cli.auth.oauth.login")
+def test_auth_login_pro_required(_login: MagicMock, mock_cls: MagicMock, runner: CliRunner) -> None:
+    from mytruv_cli.client.api import ProRequired
+
+    mock_cls.return_value = _mock_client_error("get_user", ProRequired())
+
+    result = runner.invoke(cli, ["auth", "login"])
+    assert result.exit_code == 3
+    assert result.stdout == ""
+    data = json.loads(result.stderr)
+    assert data["error"] == "pro_required"
+
+
+@patch("mytruv_cli.mcp_server.TruvClient")
+def test_mcp_tool_pro_required(mock_cls: MagicMock) -> None:
+    from mytruv_cli.client.api import ProRequired
+    from mytruv_cli.mcp_server import _call
+
+    mock_cls.return_value = _mock_client_error("get_balances", ProRequired())
+
+    assert _call("get_balances")["error"] == "pro_required"
+
+
 # -- Transactions v2 filters --
 
 
